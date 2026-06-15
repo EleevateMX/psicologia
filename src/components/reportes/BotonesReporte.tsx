@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   generarReporteIndividual,
   generarReporteGeneral,
@@ -16,25 +17,43 @@ export function BotonReporteIndividual({
   className?: string;
   children?: React.ReactNode;
 }) {
+  const [generando, setGenerando] = useState(false);
   return (
     <button
       type="button"
       className={className}
-      onClick={() => generarReporteIndividual(datos)}
+      disabled={generando}
+      onClick={async () => {
+        setGenerando(true);
+        try {
+          await generarReporteIndividual(datos);
+        } finally {
+          setGenerando(false);
+        }
+      }}
     >
-      {children ?? '📄 Descargar PDF'}
+      {generando ? 'Generando PDF…' : (children ?? '📄 Descargar PDF')}
     </button>
   );
 }
 
 export function BotonReporteGeneral({ filas }: { filas: FilaGeneral[] }) {
+  const [generando, setGenerando] = useState(false);
   return (
     <button
       type="button"
       className="btn-primary"
-      onClick={() => generarReporteGeneral(filas)}
+      disabled={generando}
+      onClick={async () => {
+        setGenerando(true);
+        try {
+          await generarReporteGeneral(filas);
+        } finally {
+          setGenerando(false);
+        }
+      }}
     >
-      📄 Descargar reporte general (PDF)
+      {generando ? 'Generando PDF…' : '📄 Descargar reporte general (PDF)'}
     </button>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import type { jsPDF } from 'jspdf';
 import {
   AVISO_CONFIDENCIALIDAD,
   SEMAFORO_META,
@@ -23,10 +22,19 @@ import type {
 } from '@/lib/dominio';
 
 const MARGEN = 14;
-const VERDE: [number, number, number] = [41, 108, 105];
+const VERDE: [number, number, number] = [79, 119, 40]; // verde selva
 
-function nuevaHoja() {
-  return new jsPDF({ unit: 'mm', format: 'a4' });
+/**
+ * Carga jsPDF y su plugin de tablas de forma diferida (code-splitting): la
+ * librería (~140 KB) solo se descarga cuando se genera un PDF, no en la carga
+ * inicial de la página de reportes.
+ */
+async function cargarPdf() {
+  const [jspdf, autotable] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
+  return { JsPDF: jspdf.jsPDF, autoTable: autotable.default };
 }
 
 function encabezado(doc: jsPDF, titulo: string, subtitulo?: string) {
@@ -35,7 +43,7 @@ function encabezado(doc: jsPDF, titulo: string, subtitulo?: string) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(15);
   doc.setFont('helvetica', 'bold');
-  doc.text('☀ Bitácora de Verano', MARGEN, 11);
+  doc.text('Bitacora de Verano · Safari', MARGEN, 11);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(titulo, MARGEN, 18);
@@ -107,8 +115,9 @@ export interface DatosReporteIndividual {
   seguimientos: Seguimiento[];
 }
 
-export function generarReporteIndividual(d: DatosReporteIndividual) {
-  const doc = nuevaHoja();
+export async function generarReporteIndividual(d: DatosReporteIndividual) {
+  const { JsPDF, autoTable } = await cargarPdf();
+  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
   const edad = calcularEdad(d.nino.fecha_nacimiento);
   encabezado(doc, 'Reporte individual', `Emitido: ${fechaEmision()}`);
 
@@ -233,8 +242,9 @@ export interface FilaGeneral {
   alertasAbiertas: number;
 }
 
-export function generarReporteGeneral(filas: FilaGeneral[]) {
-  const doc = nuevaHoja();
+export async function generarReporteGeneral(filas: FilaGeneral[]) {
+  const { JsPDF, autoTable } = await cargarPdf();
+  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
   encabezado(doc, 'Reporte general del grupo', `Emitido: ${fechaEmision()}`);
 
   const totalObs = filas.reduce((s, f) => s + f.totalObs, 0);

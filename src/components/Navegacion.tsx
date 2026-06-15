@@ -32,6 +32,7 @@ export function BarraLateral() {
           <Link
             key={it.href}
             href={it.href}
+            aria-current={activo(pathname, it.href) ? 'page' : undefined}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
               activo(pathname, it.href)
                 ? 'bg-brand-100 text-brand-800'
@@ -46,6 +47,7 @@ export function BarraLateral() {
       <div className="p-3">
         <Link
           href="/ajustes"
+          aria-current={activo(pathname, '/ajustes') ? 'page' : undefined}
           className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
             activo(pathname, '/ajustes')
               ? 'bg-brand-100 text-brand-800'
@@ -68,6 +70,7 @@ export function BarraInferior() {
         <Link
           key={it.href}
           href={it.href}
+          aria-current={activo(pathname, it.href) ? 'page' : undefined}
           className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] ${
             activo(pathname, it.href) ? 'text-brand-700' : 'text-slate-500'
           }`}

@@ -10,6 +10,20 @@
   "theme_color": "#4f7728",
   "lang": "es",
   "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Nuevo cachorro",
+      "short_name": "Nuevo",
+      "url": "/ninos/nuevo",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Reportes",
+      "short_name": "Reportes",
+      "url": "/reportes",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
