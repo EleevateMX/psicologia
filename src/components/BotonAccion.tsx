@@ -9,7 +9,7 @@ export function BotonAccion({
   className = 'btn-secondary text-xs',
   confirmar,
 }: {
-  accion: () => Promise<void>;
+  accion: () => void | Promise<void>;
   children: React.ReactNode;
   className?: string;
   confirmar?: string;

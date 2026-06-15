@@ -1,9 +1,4 @@
-/** Configuración derivada de variables de entorno (lado cliente y servidor). */
-
-export const supabaseConfigurado = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-);
+/** Datos del profesional que firma los reportes (configurables por entorno). */
 
 export const FIRMANTE = {
   nombre: process.env.NEXT_PUBLIC_FIRMANTE_NOMBRE || 'Br. Edy Medina',

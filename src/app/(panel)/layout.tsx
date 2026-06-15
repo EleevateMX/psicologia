@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { BarraLateral, BarraInferior } from '@/components/Navegacion';
 
 export default function PanelLayout({
@@ -10,16 +11,16 @@ export default function PanelLayout({
       <BarraLateral />
       <div className="flex min-h-screen flex-1 flex-col">
         {/* Encabezado móvil */}
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+        <header className="flex items-center justify-between border-b border-brand-100 bg-white/90 px-4 py-3 backdrop-blur md:hidden">
           <div className="flex items-center gap-2">
-            <span className="text-xl">☀️</span>
-            <span className="font-bold text-brand-800">Bitácora de Verano</span>
+            <span className="text-xl">🐾</span>
+            <span className="font-extrabold text-brand-800">
+              Bitácora · Safari
+            </span>
           </div>
-          <form action="/auth/signout" method="post">
-            <button className="text-sm text-slate-500" type="submit">
-              Salir
-            </button>
-          </form>
+          <Link href="/ajustes" aria-label="Ajustes" className="text-xl">
+            ⚙️
+          </Link>
         </header>
 
         <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:pb-8">

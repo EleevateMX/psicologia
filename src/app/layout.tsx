@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { RegistrarSW } from '@/components/RegistrarSW';
+import { Providers } from '@/components/Providers';
 
 export const metadata: Metadata = {
-  title: 'Bitácora de Verano',
+  title: 'Bitácora de Verano · Safari',
   description:
-    'Registro observacional socioemocional para el curso de verano. ' +
-    'Enfoque no patologizante y confidencial.',
+    'Registro observacional socioemocional para el curso de verano con ' +
+    'tema safari. Enfoque no patologizante, confidencial y 100% en tu dispositivo.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#296c69',
+  themeColor: '#4f7728',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -34,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        {children}
+        <Providers>{children}</Providers>
         <RegistrarSW />
       </body>
     </html>

@@ -1,44 +1,33 @@
+'use client';
+
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
-import { getNinos } from '@/lib/datos';
-import {
-  ANIMO_OPCIONES,
-  calcularEdad,
-  type Semaforo,
-} from '@/lib/dominio';
+import { useStore } from '@/lib/store';
+import { Cargando } from '@/components/Cargando';
+import { ANIMO_OPCIONES, calcularEdad, type Semaforo } from '@/lib/dominio';
 import { BotonReporteGeneral } from '@/components/reportes/BotonesReporte';
 import { AvisoConfidencialidad } from '@/components/AvisoConfidencialidad';
 import type { FilaGeneral } from '@/lib/pdf';
 
-export const metadata = { title: 'Reportes · Bitácora de Verano' };
-export const dynamic = 'force-dynamic';
+export default function ReportesPage() {
+  const { db, cargado } = useStore();
+  if (!cargado) return <Cargando />;
 
-export default async function ReportesPage() {
-  const ninos = await getNinos();
-  const supabase = await createClient();
-
-  const [{ data: obs }, { data: checkins }, { data: alertas }] =
-    await Promise.all([
-      supabase.from('observaciones').select('nino_id, semaforo'),
-      supabase.from('checkins_animo').select('nino_id, animo'),
-      supabase.from('alertas').select('nino_id, estado'),
-    ]);
+  const ninos = [...db.ninos].sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   const filas: FilaGeneral[] = ninos.map((nino) => {
-    const misObs = (obs ?? []).filter((o: any) => o.nino_id === nino.id);
+    const misObs = db.observaciones.filter((o) => o.nino_id === nino.id);
     const dist: Record<Semaforo, number> = { verde: 0, amarillo: 0, rojo: 0 };
-    misObs.forEach((o: any) => dist[o.semaforo as Semaforo]++);
+    misObs.forEach((o) => dist[o.semaforo]++);
 
-    const misCheck = (checkins ?? []).filter((c: any) => c.nino_id === nino.id);
+    const misCheck = db.checkins.filter((c) => c.nino_id === nino.id);
     let animo = '—';
     if (misCheck.length) {
-      const p =
-        misCheck.reduce((s: number, c: any) => s + c.animo, 0) / misCheck.length;
+      const p = misCheck.reduce((s, c) => s + c.animo, 0) / misCheck.length;
       animo = `${ANIMO_OPCIONES[Math.min(4, Math.max(0, Math.round(p) - 1))].emoji} ${p.toFixed(1)}`;
     }
 
-    const alertasAbiertas = (alertas ?? []).filter(
-      (a: any) => a.nino_id === nino.id && a.estado !== 'cerrada',
+    const alertasAbiertas = db.alertas.filter(
+      (a) => a.nino_id === nino.id && a.estado !== 'cerrada',
     ).length;
 
     return { nino, totalObs: misObs.length, dist, animo, alertasAbiertas };
@@ -47,7 +36,7 @@ export default async function ReportesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Reportes</h1>
+        <h1 className="text-2xl font-bold text-slate-800">📄 Reportes</h1>
         <p className="text-sm text-slate-500">
           Exporta a PDF, firmado y con aviso de confidencialidad.
         </p>
@@ -59,7 +48,7 @@ export default async function ReportesPage() {
           <div>
             <h2 className="font-semibold text-slate-800">Reporte general</h2>
             <p className="text-sm text-slate-500">
-              Resumen de todo el grupo en un PDF.
+              Resumen de todo el safari en un PDF.
             </p>
           </div>
         </div>
@@ -88,11 +77,14 @@ export default async function ReportesPage() {
                   href={`/reportes/${f.nino.id}`}
                   className="card flex items-center justify-between transition hover:shadow-md"
                 >
-                  <div>
-                    <p className="font-medium text-slate-800">{f.nino.nombre}</p>
-                    <p className="text-xs text-slate-500">
-                      {f.totalObs} obs. · {edad != null ? `${edad} años` : '—'}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{f.nino.animal}</span>
+                    <div>
+                      <p className="font-medium text-slate-800">{f.nino.nombre}</p>
+                      <p className="text-xs text-slate-500">
+                        {f.totalObs} obs. · {edad != null ? `${edad} años` : '—'}
+                      </p>
+                    </div>
                   </div>
                   <span className="text-brand-600">→</span>
                 </Link>

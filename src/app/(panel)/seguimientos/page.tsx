@@ -1,76 +1,32 @@
+'use client';
+
 import Link from 'next/link';
-import { getSeguimientos } from '@/lib/datos';
-import { cambiarEstadoSeguimiento } from '@/lib/acciones';
-import { formatearFecha, MEDIO_CONTACTO_META } from '@/lib/dominio';
+import { useStore } from '@/lib/store';
+import { Cargando } from '@/components/Cargando';
+import { formatearFecha, MEDIO_CONTACTO_META, type Seguimiento } from '@/lib/dominio';
 import { BotonAccion } from '@/components/BotonAccion';
 
-export const metadata = { title: 'Seguimiento con tutores · Bitácora de Verano' };
-export const dynamic = 'force-dynamic';
+export default function SeguimientosPage() {
+  const { db, cargado, cambiarEstadoSeguimiento } = useStore();
+  if (!cargado) return <Cargando />;
 
-export default async function SeguimientosPage() {
-  const seguimientos = await getSeguimientos();
+  const seguimientos = [...db.seguimientos].sort((a, b) =>
+    a.fecha < b.fecha ? 1 : -1,
+  );
   const pendientes = seguimientos.filter((s) => s.estado === 'pendiente');
   const realizados = seguimientos.filter((s) => s.estado === 'realizado');
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">
-          Seguimiento con tutores
-        </h1>
-        <p className="text-sm text-slate-500">
-          {pendientes.length} pendientes
-        </p>
-      </div>
+  const nombre = (id: string) => db.ninos.find((n) => n.id === id)?.nombre ?? 'Cachorro';
+  const animal = (id: string) => db.ninos.find((n) => n.id === id)?.animal ?? '🐾';
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-700">Pendientes</h2>
-        {pendientes.length === 0 ? (
-          <div className="card text-sm text-slate-500">
-            No hay seguimientos pendientes.
-          </div>
-        ) : (
-          pendientes.map((s) => (
-            <Fila key={s.id} s={s} />
-          ))
-        )}
-      </section>
-
-      {realizados.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-slate-500">Realizados</h2>
-          {realizados.map((s) => (
-            <Fila key={s.id} s={s} realizado />
-          ))}
-        </section>
-      )}
-    </div>
-  );
-}
-
-function Fila({
-  s,
-  realizado,
-}: {
-  s: {
-    id: string;
-    nino_id: string;
-    nino_nombre: string;
-    fecha: string;
-    medio: keyof typeof MEDIO_CONTACTO_META;
-    resumen: string;
-    acuerdos: string | null;
-  };
-  realizado?: boolean;
-}) {
-  return (
+  const Fila = ({ s, realizado }: { s: Seguimiento; realizado?: boolean }) => (
     <div className={`card ${realizado ? 'opacity-75' : ''}`}>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <Link
           href={`/ninos/${s.nino_id}`}
           className="font-medium text-brand-700 hover:underline"
         >
-          {s.nino_nombre}
+          {animal(s.nino_id)} {nombre(s.nino_id)}
         </Link>
         <span className="badge border-slate-200 bg-slate-50 text-slate-600">
           {MEDIO_CONTACTO_META[s.medio]}
@@ -89,12 +45,43 @@ function Fila({
       {!realizado && (
         <div className="mt-2">
           <BotonAccion
-            accion={cambiarEstadoSeguimiento.bind(null, s.id, 'realizado')}
+            accion={() => cambiarEstadoSeguimiento(s.id, 'realizado')}
             className="btn-primary text-xs"
           >
             Marcar realizado
           </BotonAccion>
         </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">
+          🤝 Seguimiento con tutores
+        </h1>
+        <p className="text-sm text-slate-500">{pendientes.length} pendientes</p>
+      </div>
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-700">Pendientes</h2>
+        {pendientes.length === 0 ? (
+          <div className="card text-sm text-slate-500">
+            No hay seguimientos pendientes.
+          </div>
+        ) : (
+          pendientes.map((s) => <Fila key={s.id} s={s} />)
+        )}
+      </section>
+
+      {realizados.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold text-slate-500">Realizados</h2>
+          {realizados.map((s) => (
+            <Fila key={s.id} s={s} realizado />
+          ))}
+        </section>
       )}
     </div>
   );

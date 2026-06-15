@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { useStore } from '@/lib/store';
+import { Cargando } from '@/components/Cargando';
 import {
   SEMAFORO_META,
   ANIMO_OPCIONES,
@@ -9,80 +12,78 @@ import {
 import { SemaforoBadge, CategoriaBadge } from '@/components/Etiquetas';
 import { AvisoConfidencialidad } from '@/components/AvisoConfidencialidad';
 
-export const metadata = { title: 'Tablero · Bitácora de Verano' };
-export const dynamic = 'force-dynamic';
+function hace(dias: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - dias);
+  return d.toISOString().slice(0, 10);
+}
 
-export default async function TableroPage() {
-  const supabase = await createClient();
+export default function TableroPage() {
+  const { db, cargado } = useStore();
+  if (!cargado) return <Cargando />;
 
-  const [
-    { count: totalNinos },
-    { count: alertasAbiertas },
-    { count: seguimientosPendientes },
-    { data: obsRecientes },
-    { data: checkinsRecientes },
-    { data: ultimasObs },
-  ] = await Promise.all([
-    supabase.from('ninos').select('*', { count: 'exact', head: true }).eq('activo', true),
-    supabase.from('alertas').select('*', { count: 'exact', head: true }).neq('estado', 'cerrada'),
-    supabase.from('seguimientos').select('*', { count: 'exact', head: true }).eq('estado', 'pendiente'),
-    supabase.from('observaciones').select('semaforo').gte('fecha', hace(14)),
-    supabase.from('checkins_animo').select('animo').gte('fecha', hace(14)),
-    supabase
-      .from('observaciones')
-      .select('*, ninos(nombre)')
-      .order('created_at', { ascending: false })
-      .limit(6),
-  ]);
+  const desde = hace(14);
+  const ninosActivos = db.ninos.filter((n) => n.activo);
+  const alertasAbiertas = db.alertas.filter((a) => a.estado !== 'cerrada');
+  const seguimientosPendientes = db.seguimientos.filter(
+    (s) => s.estado === 'pendiente',
+  );
 
+  const obsRecientes = db.observaciones.filter((o) => o.fecha >= desde);
   const distribucion: Record<Semaforo, number> = { verde: 0, amarillo: 0, rojo: 0 };
-  (obsRecientes ?? []).forEach((o: any) => {
-    distribucion[o.semaforo as Semaforo]++;
-  });
-  const totalObs = (obsRecientes ?? []).length;
+  obsRecientes.forEach((o) => distribucion[o.semaforo]++);
+  const totalObs = obsRecientes.length;
 
-  const animoProm =
-    checkinsRecientes && checkinsRecientes.length
-      ? checkinsRecientes.reduce((s: number, c: any) => s + c.animo, 0) /
-        checkinsRecientes.length
-      : null;
+  const checkinsRecientes = db.checkins.filter((c) => c.fecha >= desde);
+  const animoProm = checkinsRecientes.length
+    ? checkinsRecientes.reduce((s, c) => s + c.animo, 0) / checkinsRecientes.length
+    : null;
   const animoEmoji =
     animoProm != null
       ? ANIMO_OPCIONES[Math.min(4, Math.max(0, Math.round(animoProm) - 1))].emoji
       : '—';
 
+  const ninoNombre = (id: string) =>
+    db.ninos.find((n) => n.id === id)?.nombre ?? 'Cachorro';
+  const ninoAnimal = (id: string) =>
+    db.ninos.find((n) => n.id === id)?.animal ?? '🐾';
+
+  const ultimasObs = [...db.observaciones]
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+    .slice(0, 6);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Tablero</h1>
+          <h1 className="text-2xl font-bold text-slate-800">
+            🗺️ Campamento base
+          </h1>
           <p className="text-sm text-slate-500">Resumen de las últimas 2 semanas</p>
         </div>
         <Link href="/ninos/nuevo" className="btn-primary">
-          + Niño
+          + Cachorro
         </Link>
       </div>
 
-      {/* Tarjetas de métricas */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Metrica titulo="Niños activos" valor={totalNinos ?? 0} emoji="🧒" href="/ninos" />
+        <Metrica titulo="Cachorros activos" valor={ninosActivos.length} emoji="🐾" href="/ninos" />
         <Metrica
           titulo="Alertas abiertas"
-          valor={alertasAbiertas ?? 0}
-          emoji="🚨"
+          valor={alertasAbiertas.length}
+          emoji="🦁"
           href="/alertas"
-          destacar={(alertasAbiertas ?? 0) > 0}
+          destacar={alertasAbiertas.length > 0}
         />
         <Metrica
           titulo="Seguimientos pendientes"
-          valor={seguimientosPendientes ?? 0}
+          valor={seguimientosPendientes.length}
           emoji="🤝"
           href="/seguimientos"
         />
         <Metrica titulo="Ánimo promedio" valor={animoEmoji} emoji="💗" href="/reportes" />
       </div>
 
-      {/* Semáforo */}
       <section className="card">
         <h2 className="mb-3 text-sm font-semibold text-slate-700">
           🚦 Semáforo de observaciones recientes
@@ -121,23 +122,23 @@ export default async function TableroPage() {
         )}
       </section>
 
-      {/* Últimas observaciones */}
       <section className="card">
         <h2 className="mb-3 text-sm font-semibold text-slate-700">
           Últimas observaciones
         </h2>
-        {!ultimasObs || ultimasObs.length === 0 ? (
+        {ultimasObs.length === 0 ? (
           <p className="text-sm text-slate-500">Sin registros todavía.</p>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {ultimasObs.map((o: any) => (
+            {ultimasObs.map((o) => (
               <li key={o.id} className="py-3">
                 <Link
                   href={`/ninos/${o.nino_id}`}
                   className="flex flex-wrap items-center gap-2"
                 >
+                  <span aria-hidden>{ninoAnimal(o.nino_id)}</span>
                   <span className="font-medium text-slate-800">
-                    {o.ninos?.nombre ?? 'Niño'}
+                    {ninoNombre(o.nino_id)}
                   </span>
                   <CategoriaBadge valor={o.categoria} />
                   <SemaforoBadge valor={o.semaforo} />
@@ -157,12 +158,6 @@ export default async function TableroPage() {
       <AvisoConfidencialidad />
     </div>
   );
-}
-
-function hace(dias: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - dias);
-  return d.toISOString().slice(0, 10);
 }
 
 function Metrica({

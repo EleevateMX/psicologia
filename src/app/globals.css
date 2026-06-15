@@ -7,7 +7,8 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+  @apply bg-brand-50 bg-selva text-slate-800 antialiased;
+  background-attachment: fixed;
 }
 
 /* Componentes reutilizables -------------------------------------------------*/

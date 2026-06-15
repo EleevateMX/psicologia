@@ -115,6 +115,37 @@ export const MEDIO_CONTACTO_META: Record<MedioContacto, string> = {
   otro: 'Otro',
 };
 
+// ---------------------------------------------------------------------------
+// Tema "Safari de Verano" 🦁 — animales para identificar a cada peque y grupos
+// ---------------------------------------------------------------------------
+
+export const ANIMALES = [
+  '🦁', '🐯', '🐘', '🦒', '🦓', '🦛', '🐊', '🦜', '🐵', '🦍',
+  '🐆', '🐅', '🦘', '🐨', '🐼', '🦔', '🦝', '🦊', '🐺', '🦡',
+  '🐢', '🦩', '🦚', '🦦', '🦥', '🐍', '🦎', '🐸', '🦏', '🐃',
+];
+
+export const GRUPOS_SUGERIDOS = [
+  'Leones',
+  'Tigres',
+  'Elefantes',
+  'Jirafas',
+  'Monos',
+  'Cocodrilos',
+];
+
+/** Devuelve un animal estable a partir de una semilla (id o nombre). */
+export function animalDe(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return ANIMALES[h % ANIMALES.length];
+}
+
+/** Animal al azar (para asignar al crear una ficha nueva). */
+export function animalAleatorio(): string {
+  return ANIMALES[Math.floor(Math.random() * ANIMALES.length)];
+}
+
 export const AVISO_CONFIDENCIALIDAD =
   'Aviso de confidencialidad: este registro contiene datos personales de ' +
   'niñas y niños y está protegido. Su uso es exclusivamente para el ' +
@@ -123,12 +154,13 @@ export const AVISO_CONFIDENCIALIDAD =
   'la normativa de protección de datos de menores.';
 
 // ---------------------------------------------------------------------------
-// Modelos de datos (reflejan las tablas de Supabase)
+// Modelos de datos (almacenados localmente en el dispositivo)
 // ---------------------------------------------------------------------------
 
 export interface Nino {
   id: string;
   nombre: string;
+  animal: string;
   fecha_nacimiento: string | null;
   grupo: string | null;
   tutor_nombre: string | null;

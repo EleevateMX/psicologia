@@ -6,7 +6,7 @@ import { MEDIO_CONTACTO_META, hoyISO, type MedioContacto } from '@/lib/dominio';
 export function SeguimientoForm({
   action,
 }: {
-  action: (form: FormData) => Promise<void>;
+  action: (form: FormData) => void | Promise<void>;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [enviando, setEnviando] = useState(false);

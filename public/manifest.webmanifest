@@ -1,13 +1,13 @@
 {
-  "name": "Bitácora de Verano",
+  "name": "Bitácora de Verano · Safari",
   "short_name": "Bitácora",
-  "description": "Registro observacional socioemocional del curso de verano.",
+  "description": "Registro observacional socioemocional del curso de verano, tema safari. Funciona offline y guarda los datos en tu dispositivo.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#eef7f6",
-  "theme_color": "#296c69",
+  "background_color": "#f3f8ec",
+  "theme_color": "#4f7728",
   "lang": "es",
   "categories": ["education", "productivity"],
   "icons": [

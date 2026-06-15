@@ -5,7 +5,7 @@ import { useState, useRef } from 'react';
 export function AlertaForm({
   action,
 }: {
-  action: (form: FormData) => Promise<void>;
+  action: (form: FormData) => void | Promise<void>;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [enviando, setEnviando] = useState(false);

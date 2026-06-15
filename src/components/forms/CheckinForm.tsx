@@ -6,7 +6,7 @@ import { ANIMO_OPCIONES, hoyISO } from '@/lib/dominio';
 export function CheckinForm({
   action,
 }: {
-  action: (form: FormData) => Promise<void>;
+  action: (form: FormData) => void | Promise<void>;
 }) {
   const [animo, setAnimo] = useState(3);
   const [enviando, setEnviando] = useState(false);

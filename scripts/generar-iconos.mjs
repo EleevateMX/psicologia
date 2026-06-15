@@ -53,29 +53,40 @@ function encodePNG(size, draw) {
 }
 
 function draw(size, maskable) {
+  const s = maskable ? 0.82 : 1; // encoge el dibujo para iconos maskable
   const cx = size / 2;
-  const cy = size / 2;
-  // Margen de seguridad para iconos maskable
-  const sunR = size * (maskable ? 0.16 : 0.2);
-  const rayInner = sunR * 1.5;
-  const rayOuter = sunR * 2.25;
+  // Huella de animal (safari): almohadilla central + 4 dedos
+  const padCx = cx;
+  const padCy = size * 0.62;
+  const padRx = size * 0.18 * s;
+  const padRy = size * 0.15 * s;
+  const dedoR = size * 0.072 * s;
+  const dedos = [
+    [size * 0.34, size * 0.4],
+    [size * 0.45, size * 0.31],
+    [size * 0.55, size * 0.31],
+    [size * 0.66, size * 0.4],
+  ];
+  // Color crema para la huella
+  const HUELLA = [249, 236, 201];
+  function enElipse(x, y, ex, ey, rx, ry) {
+    const a = (x - ex) / rx;
+    const b = (y - ey) / ry;
+    return a * a + b * b <= 1;
+  }
   return (set) => {
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
-        // Fondo de marca (#296c69)
-        let r = 41, g = 108, b = 105;
-        const dx = x - cx;
-        const dy = y - cy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const ang = Math.atan2(dy, dx);
-        // Rayos del sol
-        const rayMod = (Math.cos(ang * 8) + 1) / 2;
-        if (dist > rayInner && dist < rayOuter && rayMod > 0.6) {
-          r = 250; g = 204; b = 21; // amarillo
+        // Fondo verde selva (#4f7728)
+        let r = 79, g = 119, b = 40;
+        let dibujo = enElipse(x, y, padCx, padCy, padRx, padRy);
+        for (const [dx, dy] of dedos) {
+          if (enElipse(x, y, dx, dy, dedoR, dedoR * 1.15)) dibujo = true;
         }
-        // Disco del sol
-        if (dist < sunR) {
-          r = 250; g = 204; b = 21;
+        if (dibujo) {
+          r = HUELLA[0];
+          g = HUELLA[1];
+          b = HUELLA[2];
         }
         set(x, y, r, g, b, 255);
       }

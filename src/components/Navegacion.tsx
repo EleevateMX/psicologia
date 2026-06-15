@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ITEMS = [
-  { href: '/', etiqueta: 'Tablero', emoji: '📊' },
-  { href: '/ninos', etiqueta: 'Niños', emoji: '🧒' },
-  { href: '/alertas', etiqueta: 'Alertas', emoji: '🚨' },
+  { href: '/', etiqueta: 'Campamento', emoji: '🗺️' },
+  { href: '/ninos', etiqueta: 'Cachorros', emoji: '🐾' },
+  { href: '/alertas', etiqueta: 'Alertas', emoji: '🦁' },
   { href: '/seguimientos', etiqueta: 'Tutores', emoji: '🤝' },
   { href: '/reportes', etiqueta: 'Reportes', emoji: '📄' },
 ];
@@ -19,12 +19,12 @@ function activo(pathname: string, href: string): boolean {
 export function BarraLateral() {
   const pathname = usePathname();
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white md:flex md:flex-col">
+    <aside className="hidden w-60 shrink-0 border-r border-brand-100 bg-white/80 backdrop-blur md:flex md:flex-col">
       <div className="flex items-center gap-2 px-5 py-5">
-        <span className="text-2xl">☀️</span>
+        <span className="text-2xl">🐾</span>
         <div className="leading-tight">
-          <p className="text-sm font-bold text-brand-800">Bitácora</p>
-          <p className="text-xs text-slate-500">de Verano</p>
+          <p className="text-sm font-extrabold text-brand-800">Bitácora</p>
+          <p className="text-xs font-medium text-sabana-600">Safari de Verano</p>
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-3">
@@ -34,8 +34,8 @@ export function BarraLateral() {
             href={it.href}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
               activo(pathname, it.href)
-                ? 'bg-brand-50 text-brand-800'
-                : 'text-slate-600 hover:bg-slate-100'
+                ? 'bg-brand-100 text-brand-800'
+                : 'text-slate-600 hover:bg-brand-50'
             }`}
           >
             <span aria-hidden>{it.emoji}</span>
@@ -43,11 +43,19 @@ export function BarraLateral() {
           </Link>
         ))}
       </nav>
-      <form action="/auth/signout" method="post" className="p-3">
-        <button className="btn-secondary w-full text-slate-600" type="submit">
-          Cerrar sesión
-        </button>
-      </form>
+      <div className="p-3">
+        <Link
+          href="/ajustes"
+          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+            activo(pathname, '/ajustes')
+              ? 'bg-brand-100 text-brand-800'
+              : 'text-slate-500 hover:bg-brand-50'
+          }`}
+        >
+          <span aria-hidden>⚙️</span>
+          Ajustes y respaldo
+        </Link>
+      </div>
     </aside>
   );
 }
@@ -55,7 +63,7 @@ export function BarraLateral() {
 export function BarraInferior() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white/95 backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-brand-100 bg-white/95 backdrop-blur md:hidden">
       {ITEMS.map((it) => (
         <Link
           key={it.href}

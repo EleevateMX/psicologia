@@ -1,26 +1,24 @@
+'use client';
+
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import {
-  getNino,
-  getObservaciones,
-  getCheckins,
-  getAlertasDeNino,
-  getSeguimientosDeNino,
-} from '@/lib/datos';
-import {
-  crearObservacion,
-  crearCheckin,
-  crearAlerta,
-  crearSeguimiento,
-  cambiarEstadoAlerta,
-  cambiarEstadoSeguimiento,
-  eliminarObservacion,
-} from '@/lib/acciones';
+  useStore,
+  obsDeNino,
+  checkinsDeNino,
+  alertasDeNino,
+  seguimientosDeNino,
+} from '@/lib/store';
+import { Cargando } from '@/components/Cargando';
+import { txt, txtOrNull } from '@/lib/form';
 import {
   calcularEdad,
   formatearFecha,
   formatearFechaHora,
   MEDIO_CONTACTO_META,
+  type Categoria,
+  type Semaforo,
+  type MedioContacto,
+  type EstadoSeguimiento,
 } from '@/lib/dominio';
 import {
   SemaforoBadge,
@@ -34,58 +32,96 @@ import { AlertaForm } from '@/components/forms/AlertaForm';
 import { SeguimientoForm } from '@/components/forms/SeguimientoForm';
 import { BotonAccion } from '@/components/BotonAccion';
 
-export const dynamic = 'force-dynamic';
-
-export async function generateMetadata({ params }: { params: { id: string } }) {
-  const nino = await getNino(params.id);
-  return { title: `${nino?.nombre ?? 'Ficha'} · Bitácora de Verano` };
-}
-
-export default async function NinoDetallePage({
+export default function NinoDetallePage({
   params,
 }: {
   params: { id: string };
 }) {
-  const nino = await getNino(params.id);
-  if (!nino) notFound();
+  const store = useStore();
+  const { db, cargado } = store;
 
-  const [observaciones, checkins, alertas, seguimientos] = await Promise.all([
-    getObservaciones(nino.id),
-    getCheckins(nino.id),
-    getAlertasDeNino(nino.id),
-    getSeguimientosDeNino(nino.id),
-  ]);
+  if (!cargado) return <Cargando />;
+  const nino = db.ninos.find((n) => n.id === params.id);
+  if (!nino) {
+    return (
+      <div className="card text-center text-sm text-slate-500">
+        No encontramos esta ficha.{' '}
+        <Link href="/ninos" className="text-brand-600 hover:underline">
+          Volver a cachorros
+        </Link>
+      </div>
+    );
+  }
 
+  const observaciones = obsDeNino(db, nino.id);
+  const checkins = checkinsDeNino(db, nino.id);
+  const alertas = alertasDeNino(db, nino.id);
+  const seguimientos = seguimientosDeNino(db, nino.id);
   const edad = calcularEdad(nino.fecha_nacimiento);
   const alertasAbiertas = alertas.filter((a) => a.estado !== 'cerrada');
+
+  // Handlers (escriben en el almacén local) ---------------------------------
+  const crearObservacion = (form: FormData) =>
+    store.agregarObservacion({
+      nino_id: nino.id,
+      fecha: txt(form, 'fecha'),
+      categoria: txt(form, 'categoria') as Categoria,
+      semaforo: txt(form, 'semaforo') as Semaforo,
+      descripcion: txt(form, 'descripcion'),
+      acciones: txtOrNull(form, 'acciones'),
+      crearAlerta: form.get('crear_alerta') === 'on',
+    });
+
+  const crearCheckin = (form: FormData) =>
+    store.agregarCheckin({
+      nino_id: nino.id,
+      fecha: txt(form, 'fecha'),
+      animo: Number(form.get('animo')),
+      nota: txtOrNull(form, 'nota'),
+    });
+
+  const crearAlerta = (form: FormData) =>
+    store.agregarAlerta({
+      nino_id: nino.id,
+      observacion_id: null,
+      titulo: txt(form, 'titulo'),
+      detalle: txtOrNull(form, 'detalle'),
+    });
+
+  const crearSeguimiento = (form: FormData) =>
+    store.agregarSeguimiento({
+      nino_id: nino.id,
+      fecha: txt(form, 'fecha'),
+      medio: txt(form, 'medio') as MedioContacto,
+      resumen: txt(form, 'resumen'),
+      acuerdos: txtOrNull(form, 'acuerdos'),
+      estado: (txt(form, 'estado') as EstadoSeguimiento) || 'pendiente',
+    });
 
   return (
     <div className="space-y-6">
       <Link href="/ninos" className="text-sm text-brand-600 hover:underline">
-        ← Niños
+        ← Cachorros
       </Link>
 
       {/* Encabezado de ficha */}
       <div className="card">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-2xl font-semibold text-brand-700">
-              {nino.nombre.charAt(0).toUpperCase()}
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-3xl">
+              {nino.animal}
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">{nino.nombre}</h1>
               <p className="text-sm text-slate-500">
                 {edad != null ? `${edad} años` : 'Edad —'}
-                {nino.grupo ? ` · ${nino.grupo}` : ''}
+                {nino.grupo ? ` · Manada ${nino.grupo}` : ''}
                 {!nino.activo && ' · Archivado'}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <Link
-              href={`/reportes/${nino.id}`}
-              className="btn-secondary text-sm"
-            >
+            <Link href={`/reportes/${nino.id}`} className="btn-secondary text-sm">
               📄 Reporte
             </Link>
             <Link
@@ -106,7 +142,7 @@ export default async function NinoDetallePage({
 
         {alertasAbiertas.length > 0 && (
           <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            🚨 {alertasAbiertas.length} alerta(s) abiertas requieren seguimiento.
+            🦁 {alertasAbiertas.length} alerta(s) abiertas requieren seguimiento.
           </div>
         )}
       </div>
@@ -116,7 +152,7 @@ export default async function NinoDetallePage({
         <h2 className="mb-3 text-sm font-semibold text-slate-700">
           💗 Check-in de ánimo
         </h2>
-        <CheckinForm action={crearCheckin.bind(null, nino.id)} />
+        <CheckinForm action={crearCheckin} />
         {checkins.length > 0 && (
           <ul className="mt-4 space-y-2">
             {checkins.slice(0, 8).map((c) => (
@@ -137,12 +173,10 @@ export default async function NinoDetallePage({
 
       {/* Observaciones */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700">
-            🗒️ Observaciones ({observaciones.length})
-          </h2>
-        </div>
-        <ObservacionForm action={crearObservacion.bind(null, nino.id)} />
+        <h2 className="text-sm font-semibold text-slate-700">
+          🗒️ Observaciones ({observaciones.length})
+        </h2>
+        <ObservacionForm action={crearObservacion} />
 
         {observaciones.length === 0 ? (
           <p className="text-sm text-slate-500">Sin observaciones todavía.</p>
@@ -168,7 +202,7 @@ export default async function NinoDetallePage({
                 )}
                 <div className="mt-2 text-right">
                   <BotonAccion
-                    accion={eliminarObservacion.bind(null, o.id, nino.id)}
+                    accion={() => store.eliminarObservacion(o.id)}
                     confirmar="¿Eliminar esta observación?"
                     className="text-xs text-slate-400 hover:text-red-600"
                   >
@@ -185,9 +219,9 @@ export default async function NinoDetallePage({
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-700">
-            🚨 Alertas ({alertas.length})
+            🦁 Alertas ({alertas.length})
           </h2>
-          <AlertaForm action={crearAlerta.bind(null, nino.id)} />
+          <AlertaForm action={crearAlerta} />
         </div>
         {alertas.length === 0 ? (
           <p className="text-sm text-slate-500">Sin alertas.</p>
@@ -208,14 +242,14 @@ export default async function NinoDetallePage({
                 <div className="mt-2 flex gap-2">
                   {a.estado !== 'en_seguimiento' && a.estado !== 'cerrada' && (
                     <BotonAccion
-                      accion={cambiarEstadoAlerta.bind(null, a.id, 'en_seguimiento')}
+                      accion={() => store.cambiarEstadoAlerta(a.id, 'en_seguimiento')}
                     >
                       Marcar en seguimiento
                     </BotonAccion>
                   )}
                   {a.estado !== 'cerrada' && (
                     <BotonAccion
-                      accion={cambiarEstadoAlerta.bind(null, a.id, 'cerrada')}
+                      accion={() => store.cambiarEstadoAlerta(a.id, 'cerrada')}
                       className="btn-primary text-xs"
                     >
                       Cerrar
@@ -223,7 +257,7 @@ export default async function NinoDetallePage({
                   )}
                   {a.estado === 'cerrada' && (
                     <BotonAccion
-                      accion={cambiarEstadoAlerta.bind(null, a.id, 'abierta')}
+                      accion={() => store.cambiarEstadoAlerta(a.id, 'abierta')}
                     >
                       Reabrir
                     </BotonAccion>
@@ -241,7 +275,7 @@ export default async function NinoDetallePage({
           <h2 className="text-sm font-semibold text-slate-700">
             🤝 Seguimiento con tutores ({seguimientos.length})
           </h2>
-          <SeguimientoForm action={crearSeguimiento.bind(null, nino.id)} />
+          <SeguimientoForm action={crearSeguimiento} />
         </div>
         {seguimientos.length === 0 ? (
           <p className="text-sm text-slate-500">Sin seguimientos registrados.</p>
@@ -276,7 +310,7 @@ export default async function NinoDetallePage({
                 {s.estado === 'pendiente' && (
                   <div className="mt-2">
                     <BotonAccion
-                      accion={cambiarEstadoSeguimiento.bind(null, s.id, 'realizado')}
+                      accion={() => store.cambiarEstadoSeguimiento(s.id, 'realizado')}
                       className="btn-primary text-xs"
                     >
                       Marcar realizado
