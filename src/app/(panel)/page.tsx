@@ -69,6 +69,13 @@ export default function InicioPage() {
           activo
         />
         <Seccion
+          href="/analisis"
+          emoji="📊"
+          titulo="Análisis"
+          desc="Evolución de puntajes, comparaciones y tendencias entre personas."
+          activo
+        />
+        <Seccion
           href="/reportes"
           emoji="📄"
           titulo="Reportes"

@@ -11,6 +11,7 @@ const ITEMS_SIDEBAR = [
   { href: '/pacientes', etiqueta: 'Pacientes', emoji: '👤' },
   { href: '/evaluaciones', etiqueta: 'Evaluaciones', emoji: '📋' },
   { href: '/guias', etiqueta: 'Guías de entrevista', emoji: '📝' },
+  { href: '/analisis', etiqueta: 'Análisis', emoji: '📊' },
   { href: '/reportes', etiqueta: 'Reportes', emoji: '📄' },
 ];
 
