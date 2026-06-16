@@ -3,26 +3,27 @@ import './globals.css';
 import { RegistrarSW } from '@/components/RegistrarSW';
 import { Providers } from '@/components/Providers';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bitacora-de-verano.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://psico-note.app';
 const DESCRIPCION =
-  'Registro observacional socioemocional para el curso de verano con tema ' +
-  'safari. Enfoque no patologizante, confidencial y 100% en tu dispositivo.';
+  'Psico-Note: expedientes psicológicos con notas, actividades y evaluaciones. ' +
+  'Incluye el apartado del curso de verano (Safari). No patologizante, ' +
+  'confidencial y 100% en tu dispositivo.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  applicationName: 'Bitácora de Verano',
+  applicationName: 'Psico-Note',
   title: {
-    default: 'Bitácora de Verano · Safari',
-    template: '%s · Bitácora de Verano',
+    default: 'Psico-Note · Expedientes y notas',
+    template: '%s · Psico-Note',
   },
   description: DESCRIPCION,
   keywords: [
+    'expediente psicológico',
+    'notas de sesión',
+    'actividades terapéuticas',
+    'evaluaciones',
     'curso de verano',
-    'registro socioemocional',
-    'observación infantil',
-    'bitácora',
-    'semáforo emocional',
-    'psicología educativa',
+    'psicología',
   ],
   authors: [{ name: 'Br. Edy Medina' }],
   manifest: '/manifest.webmanifest',
@@ -38,15 +39,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'es_MX',
-    siteName: 'Bitácora de Verano',
-    title: 'Bitácora de Verano · Safari 🐾',
+    siteName: 'Psico-Note',
+    title: 'Psico-Note · Expedientes y notas',
     description: DESCRIPCION,
     images: [{ url: '/icons/icon-512.png', width: 512, height: 512 }],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Bitácora',
+    title: 'Psico-Note',
   },
   icons: {
     icon: '/icons/icon-192.png',

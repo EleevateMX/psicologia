@@ -19,10 +19,8 @@ export default function PanelLayout({
         {/* Encabezado móvil */}
         <header className="flex items-center justify-between border-b border-brand-100 bg-white/90 px-4 py-3 backdrop-blur md:hidden">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🐾</span>
-            <span className="font-extrabold text-brand-800">
-              Bitácora · Safari
-            </span>
+            <span className="text-xl">🧠</span>
+            <span className="font-extrabold text-brand-800">Psico-Note</span>
           </div>
           <Link href="/ajustes" aria-label="Ajustes" className="text-xl">
             ⚙️

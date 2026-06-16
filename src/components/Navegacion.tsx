@@ -4,11 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ITEMS = [
-  { href: '/', etiqueta: 'Campamento', corto: 'Base', emoji: '🗺️' },
-  { href: '/ninos', etiqueta: 'Cachorros', corto: 'Niños', emoji: '🐾' },
+  { href: '/', etiqueta: 'Inicio', corto: 'Inicio', emoji: '🏠' },
+  { href: '/curso', etiqueta: 'Curso de Verano', corto: 'Curso', emoji: '🦁' },
+  { href: '/ninos', etiqueta: 'Expedientes', corto: 'Fichas', emoji: '🗂️' },
   { href: '/evaluaciones', etiqueta: 'Evaluaciones', corto: 'Evaluar', emoji: '📋' },
-  { href: '/alertas', etiqueta: 'Alertas', corto: 'Alertas', emoji: '🦁' },
-  { href: '/seguimientos', etiqueta: 'Tutores', corto: 'Tutores', emoji: '🤝' },
   { href: '/reportes', etiqueta: 'Reportes', corto: 'Reportes', emoji: '📄' },
 ];
 
@@ -22,10 +21,10 @@ export function BarraLateral() {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-brand-100 bg-white/80 backdrop-blur md:flex md:flex-col">
       <div className="flex items-center gap-2 px-5 py-5">
-        <span className="text-2xl">🐾</span>
+        <span className="text-2xl">🧠</span>
         <div className="leading-tight">
-          <p className="text-sm font-extrabold text-brand-800">Bitácora</p>
-          <p className="text-xs font-medium text-sabana-600">Safari de Verano</p>
+          <p className="text-sm font-extrabold text-brand-800">Psico-Note</p>
+          <p className="text-xs font-medium text-sabana-600">Expedientes &amp; notas</p>
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-3">

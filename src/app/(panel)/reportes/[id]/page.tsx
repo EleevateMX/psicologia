@@ -8,6 +8,8 @@ import {
   alertasDeNino,
   seguimientosDeNino,
   evaluacionesDeNino,
+  notasDeNino,
+  actividadesDeNino,
 } from '@/lib/store';
 import { Cargando } from '@/components/Cargando';
 import {
@@ -45,6 +47,8 @@ export default function ReporteIndividualPage({
   const alertas = alertasDeNino(db, nino.id);
   const seguimientos = seguimientosDeNino(db, nino.id);
   const evaluaciones = evaluacionesDeNino(db, nino.id);
+  const notas = notasDeNino(db, nino.id);
+  const actividades = actividadesDeNino(db, nino.id);
 
   const dist: Record<Semaforo, number> = { verde: 0, amarillo: 0, rojo: 0 };
   observaciones.forEach((o) => dist[o.semaforo]++);
@@ -53,7 +57,16 @@ export default function ReporteIndividualPage({
     ? checkins.reduce((s, c) => s + c.animo, 0) / checkins.length
     : null;
 
-  const datos = { nino, observaciones, checkins, alertas, seguimientos, evaluaciones };
+  const datos = {
+    nino,
+    observaciones,
+    checkins,
+    alertas,
+    seguimientos,
+    evaluaciones,
+    notas,
+    actividades,
+  };
 
   return (
     <div className="space-y-6">

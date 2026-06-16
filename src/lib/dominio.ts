@@ -146,6 +146,11 @@ export function animalAleatorio(): string {
   return ANIMALES[Math.floor(Math.random() * ANIMALES.length)];
 }
 
+export const APP = {
+  nombre: 'Psico-Note',
+  lema: 'Expedientes, notas y acompañamiento psicológico',
+};
+
 export const AVISO_CONFIDENCIALIDAD =
   'Aviso de confidencialidad: este registro contiene datos personales de ' +
   'niñas y niños y está protegido. Su uso es exclusivamente para el ' +
@@ -229,6 +234,43 @@ export interface Instrumento {
   nombre: string;
   descripcion: string | null;
   items: ItemInstrumento[];
+  created_at: string;
+}
+
+// --- Notas y actividades del expediente ------------------------------------
+
+export type TipoNota = 'sesion' | 'observacion' | 'acuerdo' | 'general';
+
+export const TIPO_NOTA_META: Record<
+  TipoNota,
+  { etiqueta: string; emoji: string; clase: string }
+> = {
+  sesion: { etiqueta: 'Sesión', emoji: '🗣️', clase: 'bg-indigo-100 text-indigo-800' },
+  observacion: { etiqueta: 'Observación', emoji: '👀', clase: 'bg-sky-100 text-sky-800' },
+  acuerdo: { etiqueta: 'Acuerdo', emoji: '🤝', clase: 'bg-emerald-100 text-emerald-800' },
+  general: { etiqueta: 'Nota', emoji: '📝', clase: 'bg-slate-100 text-slate-700' },
+};
+
+export type EstadoActividad = 'planeada' | 'realizada';
+
+export interface Nota {
+  id: string;
+  nino_id: string;
+  fecha: string;
+  tipo: TipoNota;
+  titulo: string | null;
+  contenido: string;
+  created_at: string;
+}
+
+export interface Actividad {
+  id: string;
+  nino_id: string;
+  fecha: string;
+  titulo: string;
+  descripcion: string | null;
+  objetivo: string | null;
+  estado: EstadoActividad;
   created_at: string;
 }
 

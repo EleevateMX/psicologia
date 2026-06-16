@@ -20,8 +20,10 @@ import type {
   Alerta,
   Seguimiento,
   Evaluacion,
+  Nota,
+  Actividad,
 } from '@/lib/dominio';
-import { interpretarPuntaje } from '@/lib/dominio';
+import { interpretarPuntaje, TIPO_NOTA_META } from '@/lib/dominio';
 
 const MARGEN = 14;
 const VERDE: [number, number, number] = [79, 119, 40]; // verde selva
@@ -45,7 +47,7 @@ function encabezado(doc: jsPDF, titulo: string, subtitulo?: string) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(15);
   doc.setFont('helvetica', 'bold');
-  doc.text('Bitacora de Verano · Safari', MARGEN, 11);
+  doc.text('Psico-Note · Curso de Verano', MARGEN, 11);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(titulo, MARGEN, 18);
@@ -116,6 +118,8 @@ export interface DatosReporteIndividual {
   alertas: Alerta[];
   seguimientos: Seguimiento[];
   evaluaciones: Evaluacion[];
+  notas: Nota[];
+  actividades: Actividad[];
 }
 
 export async function generarReporteIndividual(d: DatosReporteIndividual) {
@@ -239,6 +243,42 @@ export async function generarReporteIndividual(d: DatosReporteIndividual) {
         e.puntaje != null ? `${e.puntaje.toFixed(1)}/5` : '—',
         interpretarPuntaje(e.puntaje).etiqueta,
         e.notas || '—',
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: VERDE },
+      styles: { fontSize: 8, valign: 'top' },
+      margin: { left: MARGEN, right: MARGEN },
+    });
+  }
+
+  // Notas del expediente
+  if (d.notas.length) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [['Fecha', 'Tipo', 'Nota']],
+      body: d.notas.map((n) => [
+        formatearFecha(n.fecha),
+        TIPO_NOTA_META[n.tipo].etiqueta,
+        (n.titulo ? `${n.titulo}: ` : '') + n.contenido,
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: VERDE },
+      styles: { fontSize: 8, valign: 'top' },
+      columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 24 } },
+      margin: { left: MARGEN, right: MARGEN },
+    });
+  }
+
+  // Actividades
+  if (d.actividades.length) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [['Fecha', 'Actividad', 'Objetivo', 'Estado']],
+      body: d.actividades.map((a) => [
+        formatearFecha(a.fecha),
+        (a.titulo || '') + (a.descripcion ? ` — ${a.descripcion}` : ''),
+        a.objetivo || '—',
+        a.estado === 'realizada' ? 'Realizada' : 'Planeada',
       ]),
       theme: 'striped',
       headStyles: { fillColor: VERDE },

@@ -1,7 +1,7 @@
 {
-  "name": "Bitácora de Verano · Safari",
-  "short_name": "Bitácora",
-  "description": "Registro observacional socioemocional del curso de verano, tema safari. Funciona offline y guarda los datos en tu dispositivo.",
+  "name": "Psico-Note · Expedientes y notas",
+  "short_name": "Psico-Note",
+  "description": "Expedientes psicológicos con notas, actividades y evaluaciones, e incluye el apartado del curso de verano. Funciona offline y guarda los datos en tu dispositivo.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -12,15 +12,15 @@
   "categories": ["education", "productivity"],
   "shortcuts": [
     {
-      "name": "Nuevo cachorro",
+      "name": "Nuevo expediente",
       "short_name": "Nuevo",
       "url": "/ninos/nuevo",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Reportes",
-      "short_name": "Reportes",
-      "url": "/reportes",
+      "name": "Curso de Verano",
+      "short_name": "Curso",
+      "url": "/curso",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ],

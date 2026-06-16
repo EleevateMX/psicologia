@@ -8,6 +8,8 @@ import {
   alertasDeNino,
   seguimientosDeNino,
   evaluacionesDeNino,
+  notasDeNino,
+  actividadesDeNino,
 } from '@/lib/store';
 import { Cargando } from '@/components/Cargando';
 import { txt, txtOrNull } from '@/lib/form';
@@ -16,11 +18,13 @@ import {
   formatearFecha,
   formatearFechaHora,
   interpretarPuntaje,
+  TIPO_NOTA_META,
   MEDIO_CONTACTO_META,
   type Categoria,
   type Semaforo,
   type MedioContacto,
   type EstadoSeguimiento,
+  type TipoNota,
 } from '@/lib/dominio';
 import {
   SemaforoBadge,
@@ -34,6 +38,8 @@ import { CheckinForm } from '@/components/forms/CheckinForm';
 import { AlertaForm } from '@/components/forms/AlertaForm';
 import { SeguimientoForm } from '@/components/forms/SeguimientoForm';
 import { AplicarEvaluacion } from '@/components/forms/AplicarEvaluacion';
+import { NotaForm } from '@/components/forms/NotaForm';
+import { ActividadForm } from '@/components/forms/ActividadForm';
 import { BotonAccion } from '@/components/BotonAccion';
 
 export default function NinoDetallePage({
@@ -62,6 +68,8 @@ export default function NinoDetallePage({
   const alertas = alertasDeNino(db, nino.id);
   const seguimientos = seguimientosDeNino(db, nino.id);
   const evaluaciones = evaluacionesDeNino(db, nino.id);
+  const notas = notasDeNino(db, nino.id);
+  const actividades = actividadesDeNino(db, nino.id);
   const edad = calcularEdad(nino.fecha_nacimiento);
   const alertasAbiertas = alertas.filter((a) => a.estado !== 'cerrada');
 
@@ -109,6 +117,25 @@ export default function NinoDetallePage({
       resumen: txt(form, 'resumen'),
       acuerdos: txtOrNull(form, 'acuerdos'),
       estado: (txt(form, 'estado') as EstadoSeguimiento) || 'pendiente',
+    });
+
+  const crearNota = (form: FormData) =>
+    store.agregarNota({
+      nino_id: nino.id,
+      fecha: txt(form, 'fecha'),
+      tipo: (txt(form, 'tipo') as TipoNota) || 'general',
+      titulo: txtOrNull(form, 'titulo'),
+      contenido: txt(form, 'contenido'),
+    });
+
+  const crearActividad = (form: FormData) =>
+    store.agregarActividad({
+      nino_id: nino.id,
+      fecha: txt(form, 'fecha'),
+      titulo: txt(form, 'titulo'),
+      descripcion: txtOrNull(form, 'descripcion'),
+      objetivo: txtOrNull(form, 'objetivo'),
+      estado: (txt(form, 'estado') as 'planeada' | 'realizada') || 'planeada',
     });
 
   return (
@@ -179,6 +206,106 @@ export default function NinoDetallePage({
             <BarrasSemaforo dist={distSemaforo} />
           </div>
         </div>
+      </section>
+
+      {/* Notas */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700">
+          📝 Notas ({notas.length})
+        </h2>
+        <NotaForm action={crearNota} />
+        {notas.length === 0 ? (
+          <p className="text-sm text-slate-500">Sin notas todavía.</p>
+        ) : (
+          <ul className="space-y-2">
+            {notas.map((n) => (
+              <li key={n.id} className="card">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`badge border-transparent ${TIPO_NOTA_META[n.tipo].clase}`}>
+                    {TIPO_NOTA_META[n.tipo].emoji} {TIPO_NOTA_META[n.tipo].etiqueta}
+                  </span>
+                  {n.titulo && (
+                    <span className="font-medium text-slate-800">{n.titulo}</span>
+                  )}
+                  <span className="ml-auto text-xs text-slate-400">
+                    {formatearFecha(n.fecha)}
+                  </span>
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                  {n.contenido}
+                </p>
+                <div className="mt-2 text-right">
+                  <BotonAccion
+                    accion={() => store.eliminarNota(n.id)}
+                    confirmar="¿Eliminar esta nota?"
+                    className="text-xs text-slate-400 hover:text-red-600"
+                  >
+                    Eliminar
+                  </BotonAccion>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Actividades */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700">
+          🎒 Actividades ({actividades.length})
+        </h2>
+        <ActividadForm action={crearActividad} />
+        {actividades.length === 0 ? (
+          <p className="text-sm text-slate-500">Sin actividades todavía.</p>
+        ) : (
+          <ul className="space-y-2">
+            {actividades.map((a) => (
+              <li key={a.id} className="card">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`badge border-transparent ${
+                      a.estado === 'realizada'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {a.estado === 'realizada' ? '✓ Realizada' : '◷ Planeada'}
+                  </span>
+                  <span className="font-medium text-slate-800">{a.titulo}</span>
+                  <span className="ml-auto text-xs text-slate-400">
+                    {formatearFecha(a.fecha)}
+                  </span>
+                </div>
+                {a.descripcion && (
+                  <p className="mt-1 text-sm text-slate-700">{a.descripcion}</p>
+                )}
+                {a.objetivo && (
+                  <p className="mt-1 text-sm text-slate-600">
+                    <span className="font-medium">Objetivo: </span>
+                    {a.objetivo}
+                  </p>
+                )}
+                <div className="mt-2 flex justify-end gap-2">
+                  {a.estado === 'planeada' && (
+                    <BotonAccion
+                      accion={() => store.cambiarEstadoActividad(a.id, 'realizada')}
+                      className="btn-primary text-xs"
+                    >
+                      Marcar realizada
+                    </BotonAccion>
+                  )}
+                  <BotonAccion
+                    accion={() => store.eliminarActividad(a.id)}
+                    confirmar="¿Eliminar esta actividad?"
+                    className="text-xs text-slate-400 hover:text-red-600"
+                  >
+                    Eliminar
+                  </BotonAccion>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {/* Check-in de ánimo */}

@@ -25,8 +25,11 @@ import type {
   Instrumento,
   Evaluacion,
   ItemInstrumento,
+  Nota,
+  Actividad,
   EstadoAlerta,
   EstadoSeguimiento,
+  EstadoActividad,
   MedioContacto,
 } from '@/lib/dominio';
 import { animalAleatorio, GRUPOS_SUGERIDOS } from '@/lib/dominio';
@@ -41,6 +44,8 @@ export interface BaseDatos {
   seguimientos: Seguimiento[];
   instrumentos: Instrumento[];
   evaluaciones: Evaluacion[];
+  notas: Nota[];
+  actividades: Actividad[];
 }
 
 const VACIA: BaseDatos = {
@@ -51,6 +56,8 @@ const VACIA: BaseDatos = {
   seguimientos: [],
   instrumentos: [],
   evaluaciones: [],
+  notas: [],
+  actividades: [],
 };
 
 function uid(): string {
@@ -82,6 +89,8 @@ type NuevaEvaluacion = Omit<
   Evaluacion,
   'id' | 'created_at' | 'instrumento_nombre' | 'puntaje'
 > & { instrumento_nombre?: string };
+type NuevaNota = Omit<Nota, 'id' | 'created_at'>;
+type NuevaActividad = Omit<Actividad, 'id' | 'created_at'>;
 
 interface StoreCtx {
   db: BaseDatos;
@@ -106,6 +115,13 @@ interface StoreCtx {
   eliminarInstrumento: (id: string) => void;
   agregarEvaluacion: (e: NuevaEvaluacion) => void;
   eliminarEvaluacion: (id: string) => void;
+  // Notas
+  agregarNota: (n: NuevaNota) => void;
+  eliminarNota: (id: string) => void;
+  // Actividades
+  agregarActividad: (a: NuevaActividad) => void;
+  cambiarEstadoActividad: (id: string, estado: EstadoActividad) => void;
+  eliminarActividad: (id: string) => void;
   // Datos
   cargarEjemplo: () => void;
   limpiarTodo: () => void;
@@ -174,6 +190,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       seguimientos: d.seguimientos.filter((s) => s.nino_id !== id),
       instrumentos: d.instrumentos,
       evaluaciones: d.evaluaciones.filter((e) => e.nino_id !== id),
+      notas: d.notas.filter((n) => n.nino_id !== id),
+      actividades: d.actividades.filter((a) => a.nino_id !== id),
     }));
   }, []);
 
@@ -336,6 +354,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const agregarNota = useCallback((n: NuevaNota) => {
+    const nueva: Nota = {
+      id: uid(),
+      created_at: ahora(),
+      nino_id: n.nino_id,
+      fecha: n.fecha,
+      tipo: n.tipo,
+      titulo: n.titulo ?? null,
+      contenido: n.contenido,
+    };
+    setDb((d) => ({ ...d, notas: [nueva, ...d.notas] }));
+  }, []);
+
+  const eliminarNota = useCallback((id: string) => {
+    setDb((d) => ({ ...d, notas: d.notas.filter((n) => n.id !== id) }));
+  }, []);
+
+  const agregarActividad = useCallback((a: NuevaActividad) => {
+    const nueva: Actividad = {
+      id: uid(),
+      created_at: ahora(),
+      nino_id: a.nino_id,
+      fecha: a.fecha,
+      titulo: a.titulo,
+      descripcion: a.descripcion ?? null,
+      objetivo: a.objetivo ?? null,
+      estado: a.estado,
+    };
+    setDb((d) => ({ ...d, actividades: [nueva, ...d.actividades] }));
+  }, []);
+
+  const cambiarEstadoActividad = useCallback(
+    (id: string, estado: EstadoActividad) => {
+      setDb((d) => ({
+        ...d,
+        actividades: d.actividades.map((a) =>
+          a.id === id ? { ...a, estado } : a,
+        ),
+      }));
+    },
+    [],
+  );
+
+  const eliminarActividad = useCallback((id: string) => {
+    setDb((d) => ({
+      ...d,
+      actividades: d.actividades.filter((a) => a.id !== id),
+    }));
+  }, []);
+
   const cargarEjemplo = useCallback(() => setDb(datosEjemplo()), []);
   const limpiarTodo = useCallback(() => setDb(VACIA), []);
   const exportar = useCallback(() => JSON.stringify(db, null, 2), [db]);
@@ -367,6 +435,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       eliminarInstrumento,
       agregarEvaluacion,
       eliminarEvaluacion,
+      agregarNota,
+      eliminarNota,
+      agregarActividad,
+      cambiarEstadoActividad,
+      eliminarActividad,
       cargarEjemplo,
       limpiarTodo,
       exportar,
@@ -389,6 +462,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       eliminarInstrumento,
       agregarEvaluacion,
       eliminarEvaluacion,
+      agregarNota,
+      eliminarNota,
+      agregarActividad,
+      cambiarEstadoActividad,
+      eliminarActividad,
       cargarEjemplo,
       limpiarTodo,
       exportar,
@@ -430,6 +508,16 @@ export function seguimientosDeNino(
 export function evaluacionesDeNino(db: BaseDatos, ninoId: string): Evaluacion[] {
   return db.evaluaciones
     .filter((e) => e.nino_id === ninoId)
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+}
+export function notasDeNino(db: BaseDatos, ninoId: string): Nota[] {
+  return db.notas
+    .filter((n) => n.nino_id === ninoId)
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+}
+export function actividadesDeNino(db: BaseDatos, ninoId: string): Actividad[] {
+  return db.actividades
+    .filter((a) => a.nino_id === ninoId)
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 }
 
@@ -569,5 +657,61 @@ function datosEjemplo(): BaseDatos {
     },
   ];
 
-  return { ninos, observaciones, checkins, alertas: [], seguimientos, instrumentos, evaluaciones };
+  const notas: Nota[] = [
+    {
+      id: 'nota-1',
+      nino_id: 'ej-1',
+      fecha: diasAtras(1),
+      tipo: 'sesion',
+      titulo: 'Cómo llegó hoy',
+      contenido:
+        'Llegó con mucha energía y ganas de participar. Compartió que el fin de ' +
+        'semana fue al zoológico; aprovechamos su interés para la actividad.',
+      created_at: ahora(),
+    },
+    {
+      id: 'nota-2',
+      nino_id: 'ej-1',
+      fecha: diasAtras(4),
+      tipo: 'acuerdo',
+      titulo: null,
+      contenido: 'Se acordó con la mamá reforzar el reconocimiento de logros en casa.',
+      created_at: ahora(),
+    },
+  ];
+
+  const actividades: Actividad[] = [
+    {
+      id: 'act-1',
+      nino_id: 'ej-1',
+      fecha: diasAtras(2),
+      titulo: 'El frasco de la calma',
+      descripcion: 'Crear un frasco sensorial para usar cuando sienta frustración.',
+      objetivo: 'Apoyar la autorregulación emocional.',
+      estado: 'realizada',
+      created_at: ahora(),
+    },
+    {
+      id: 'act-2',
+      nino_id: 'ej-1',
+      fecha: diasAtras(0),
+      titulo: 'Mural de fortalezas del safari',
+      descripcion: 'Dibujar qué animal lo representa y por qué.',
+      objetivo: 'Reforzar autoestima y autoconocimiento.',
+      estado: 'planeada',
+      created_at: ahora(),
+    },
+  ];
+
+  return {
+    ninos,
+    observaciones,
+    checkins,
+    alertas: [],
+    seguimientos,
+    instrumentos,
+    evaluaciones,
+    notas,
+    actividades,
+  };
 }
