@@ -98,14 +98,24 @@ export function AplicarEvaluacion({ ninoId }: { ninoId: string }) {
 
       {instrumento && (
         <div className="space-y-4">
-          {instrumento.items.map((it, idx) => (
+          {instrumento.descripcion && (
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              {instrumento.descripcion}
+            </p>
+          )}
+          {instrumento.items.map((it, idx) => {
+            const opciones = instrumento.opciones_escala ?? ESCALA_LIKERT;
+            return (
             <div key={it.id}>
               <p className="mb-1 text-sm font-medium text-slate-700">
                 {idx + 1}. {it.texto}
+                {it.inverso && (
+                  <span className="ml-1 text-[10px] text-slate-400">(inverso)</span>
+                )}
               </p>
               {it.tipo === 'escala' ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {ESCALA_LIKERT.map((op) => (
+                  {opciones.map((op) => (
                     <label
                       key={op.valor}
                       className={`cursor-pointer rounded-lg border-2 px-2.5 py-1 text-xs transition ${
@@ -140,7 +150,8 @@ export function AplicarEvaluacion({ ninoId }: { ninoId: string }) {
                 />
               )}
             </div>
-          ))}
+            );
+          })}
 
           <div>
             <label className="label" htmlFor="ev_notas">

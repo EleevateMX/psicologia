@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { Cargando } from '@/components/Cargando';
 import { BotonAccion } from '@/components/BotonAccion';
-import { formatearFecha } from '@/lib/dominio';
+import { formatearFecha, interpretarConInstrumento } from '@/lib/dominio';
 
 export default function EvaluacionesPage() {
   const { db, cargado, eliminarInstrumento } = useStore();
@@ -22,12 +22,17 @@ export default function EvaluacionesPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800">📋 Evaluaciones</h1>
           <p className="text-sm text-slate-500">
-            Tus instrumentos para aplicar a cada cachorro desde su expediente.
+            Tus instrumentos para aplicar desde cualquier expediente.
           </p>
         </div>
-        <Link href="/evaluaciones/nuevo" className="btn-primary">
-          + Instrumento
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/evaluaciones/catalogo" className="btn-secondary text-sm">
+            📚 Catálogo
+          </Link>
+          <Link href="/evaluaciones/nuevo" className="btn-primary">
+            + Instrumento
+          </Link>
+        </div>
       </div>
 
       {instrumentos.length === 0 ? (
@@ -59,23 +64,38 @@ export default function EvaluacionesPage() {
                 </BotonAccion>
               </div>
               {inst.descripcion && (
-                <p className="mt-1 text-sm text-slate-600">{inst.descripcion}</p>
+                <p className="mt-1 text-sm text-slate-600 line-clamp-2">{inst.descripcion}</p>
               )}
-              <ul className="mt-2 list-decimal space-y-0.5 pl-5 text-sm text-slate-600">
-                {inst.items.slice(0, 6).map((it) => (
-                  <li key={it.id}>
-                    {it.texto}{' '}
-                    <span className="text-xs text-slate-400">
-                      ({it.tipo === 'escala' ? 'escala' : 'texto'})
+              {inst.interpretaciones && inst.interpretaciones.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {inst.interpretaciones.map((r) => (
+                    <span
+                      key={r.etiqueta}
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${r.clase}`}
+                    >
+                      {r.desde}–{r.hasta}: {r.etiqueta}
                     </span>
-                  </li>
-                ))}
-                {inst.items.length > 6 && (
-                  <li className="text-xs text-slate-400">
-                    +{inst.items.length - 6} más…
-                  </li>
-                )}
-              </ul>
+                  ))}
+                </div>
+              )}
+              {inst.fuente && (
+                <p className="mt-1 text-[10px] text-slate-400">
+                  Fuente: {inst.fuente}
+                </p>
+              )}
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs text-slate-400 hover:text-slate-600">
+                  Ver ítems
+                </summary>
+                <ul className="mt-1 list-decimal space-y-0.5 pl-5 text-xs text-slate-600">
+                  {inst.items.map((it) => (
+                    <li key={it.id}>
+                      {it.texto}
+                      {it.inverso && <span className="ml-1 italic text-slate-400">(inv.)</span>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
             </div>
           ))}
         </div>

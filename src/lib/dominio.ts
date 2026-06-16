@@ -244,6 +244,15 @@ export interface ItemInstrumento {
   id: string;
   texto: string;
   tipo: TipoItem;
+  inverso?: boolean; // ítem de puntuación inversa (se invierte antes de sumar)
+}
+
+export interface InterpretacionPuntaje {
+  desde: number;
+  hasta: number;
+  etiqueta: string;
+  clase: string; // tailwind bg+text
+  descripcion?: string;
 }
 
 /** Plantilla de evaluación (instrumento) definida por la persona usuaria. */
@@ -253,7 +262,173 @@ export interface Instrumento {
   descripcion: string | null;
   items: ItemInstrumento[];
   created_at: string;
+  // Campos extendidos para escalas clínicas estandarizadas:
+  opciones_escala?: { valor: number; etiqueta: string }[]; // si ausente, usa ESCALA_LIKERT
+  metodo_puntaje?: 'promedio' | 'suma';                   // default: 'promedio'
+  interpretaciones?: InterpretacionPuntaje[];             // rangos cualitativos
+  fuente?: string;                                        // referencia bibliográfica
 }
+
+/** Interpreta un puntaje usando los rangos del instrumento; si no tiene, usa el genérico. */
+export function interpretarConInstrumento(
+  puntaje: number | null,
+  instrumento?: Instrumento | null,
+): { etiqueta: string; clase: string; descripcion?: string } {
+  if (puntaje == null) return { etiqueta: 'Sin puntaje', clase: 'bg-slate-100 text-slate-600' };
+  const rangos = instrumento?.interpretaciones;
+  if (rangos && rangos.length > 0) {
+    const rango = rangos.find((r) => puntaje >= r.desde && puntaje <= r.hasta);
+    if (rango) return { etiqueta: rango.etiqueta, clase: rango.clase, descripcion: rango.descripcion };
+  }
+  return interpretarPuntaje(puntaje); // fallback genérico
+}
+
+// ---------------------------------------------------------------------------
+// Catálogo de escalas de dominio público / libre acceso
+// ---------------------------------------------------------------------------
+
+export interface EscalaCatalogo {
+  nombre: string;
+  abreviatura: string;
+  descripcion: string;
+  fuente: string;
+  opciones_escala: { valor: number; etiqueta: string }[];
+  metodo_puntaje: 'promedio' | 'suma';
+  interpretaciones: InterpretacionPuntaje[];
+  items: { texto: string; inverso?: boolean }[];
+}
+
+export const CATALOGO_ESCALAS: EscalaCatalogo[] = [
+  {
+    nombre: 'PHQ-9 · Cuestionario sobre la Salud del Paciente',
+    abreviatura: 'PHQ-9',
+    descripcion:
+      'Escala de tamizaje y severidad de la depresión. 9 ítems, puntaje 0–27. ' +
+      'AVISO: el ítem 9 (ideación suicida) requiere atención inmediata si la ' +
+      'respuesta es > 0. Dominio público (Pfizer Inc.).',
+    fuente: 'Kroenke K, Spitzer RL, Williams JBW (2001). J Gen Intern Med, 16, 606–613.',
+    opciones_escala: [
+      { valor: 0, etiqueta: 'Para nada' },
+      { valor: 1, etiqueta: 'Varios días' },
+      { valor: 2, etiqueta: 'Más de la mitad de los días' },
+      { valor: 3, etiqueta: 'Casi todos los días' },
+    ],
+    metodo_puntaje: 'suma',
+    interpretaciones: [
+      { desde: 0,  hasta: 4,  etiqueta: 'Mínima',               clase: 'bg-green-100 text-green-800' },
+      { desde: 5,  hasta: 9,  etiqueta: 'Leve',                 clase: 'bg-yellow-100 text-yellow-800' },
+      { desde: 10, hasta: 14, etiqueta: 'Moderada',             clase: 'bg-orange-100 text-orange-800' },
+      { desde: 15, hasta: 19, etiqueta: 'Moderadamente severa', clase: 'bg-red-100 text-red-800' },
+      { desde: 20, hasta: 27, etiqueta: 'Severa',               clase: 'bg-red-200 text-red-900' },
+    ],
+    items: [
+      { texto: 'Poco interés o placer en hacer las cosas' },
+      { texto: 'Sentirse decaído/a, deprimido/a o sin esperanza' },
+      { texto: 'Dificultad para dormir o para dormir demasiado' },
+      { texto: 'Cansancio o falta de energía' },
+      { texto: 'Poco apetito o comer en exceso' },
+      { texto: 'Sentirse mal consigo mismo/a, o sentir que es un fracaso o que le ha fallado a sí mismo/a o a su familia' },
+      { texto: 'Dificultad para concentrarse en cosas, como leer el periódico o ver la televisión' },
+      { texto: 'Moverse o hablar más lento que de costumbre, o lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo más de lo habitual' },
+      { texto: 'Pensamientos de que sería mejor estar muerto/a, o de hacerse daño de alguna manera' },
+    ],
+  },
+  {
+    nombre: 'GAD-7 · Escala de Trastorno de Ansiedad Generalizada',
+    abreviatura: 'GAD-7',
+    descripcion:
+      'Escala de tamizaje y severidad de la ansiedad generalizada. 7 ítems, puntaje 0–21. ' +
+      'Dominio público (Pfizer Inc.).',
+    fuente: 'Spitzer RL, Kroenke K, Williams JBW, Löwe B (2006). Arch Intern Med, 166, 1092–1097.',
+    opciones_escala: [
+      { valor: 0, etiqueta: 'Para nada' },
+      { valor: 1, etiqueta: 'Varios días' },
+      { valor: 2, etiqueta: 'Más de la mitad de los días' },
+      { valor: 3, etiqueta: 'Casi todos los días' },
+    ],
+    metodo_puntaje: 'suma',
+    interpretaciones: [
+      { desde: 0,  hasta: 4,  etiqueta: 'Mínima',   clase: 'bg-green-100 text-green-800' },
+      { desde: 5,  hasta: 9,  etiqueta: 'Leve',     clase: 'bg-yellow-100 text-yellow-800' },
+      { desde: 10, hasta: 14, etiqueta: 'Moderada', clase: 'bg-orange-100 text-orange-800' },
+      { desde: 15, hasta: 21, etiqueta: 'Severa',   clase: 'bg-red-100 text-red-800' },
+    ],
+    items: [
+      { texto: 'Sentirse nervioso/a, ansioso/a o con los nervios de punta' },
+      { texto: 'No poder dejar de preocuparse o no poder controlar la preocupación' },
+      { texto: 'Preocuparse demasiado por diferentes cosas' },
+      { texto: 'Dificultad para relajarse' },
+      { texto: 'Estar tan inquieto/a que es difícil mantenerse sentado/a tranquilo/a' },
+      { texto: 'Molestarse o ponerse irritable fácilmente' },
+      { texto: 'Sentir miedo como si fuera a pasar algo terrible' },
+    ],
+  },
+  {
+    nombre: 'Escala de Autoestima de Rosenberg',
+    abreviatura: 'EAR',
+    descripcion:
+      'Mide la autoestima global. 10 ítems, puntaje 10–40 (mayor = más autoestima). ' +
+      'Los ítems 6–10 son de puntuación inversa. Libre uso para investigación y clínica.',
+    fuente: 'Rosenberg M (1965). Society and the Adolescent Self-Image. Princeton University Press.',
+    opciones_escala: [
+      { valor: 1, etiqueta: 'Muy en desacuerdo' },
+      { valor: 2, etiqueta: 'En desacuerdo' },
+      { valor: 3, etiqueta: 'De acuerdo' },
+      { valor: 4, etiqueta: 'Muy de acuerdo' },
+    ],
+    metodo_puntaje: 'suma',
+    interpretaciones: [
+      { desde: 10, hasta: 25, etiqueta: 'Autoestima baja',       clase: 'bg-red-100 text-red-800',    descripcion: 'Posible necesidad de acompañamiento en autoconcepto.' },
+      { desde: 26, hasta: 29, etiqueta: 'Autoestima normal',     clase: 'bg-yellow-100 text-yellow-800' },
+      { desde: 30, hasta: 40, etiqueta: 'Autoestima elevada',    clase: 'bg-green-100 text-green-800' },
+    ],
+    items: [
+      { texto: 'Siento que soy una persona digna de aprecio, al menos en igual medida que los demás' },
+      { texto: 'Estoy convencido/a de que tengo cualidades buenas' },
+      { texto: 'Soy capaz de hacer las cosas tan bien como la mayoría de las demás personas' },
+      { texto: 'Tengo una actitud positiva hacia mí mismo/a' },
+      { texto: 'En general, estoy satisfecho/a de mí mismo/a' },
+      { texto: 'Siento que no tengo mucho de lo que estar orgulloso/a', inverso: true },
+      { texto: 'En general, me inclino a pensar que soy un fracasado/a', inverso: true },
+      { texto: 'Me gustaría poder sentir más respeto por mí mismo/a', inverso: true },
+      { texto: 'Hay veces que realmente pienso que soy un/a inútil', inverso: true },
+      { texto: 'A veces creo que no soy buena persona', inverso: true },
+    ],
+  },
+  {
+    nombre: 'SWLS · Escala de Satisfacción con la Vida',
+    abreviatura: 'SWLS',
+    descripcion:
+      'Mide el bienestar subjetivo global (componente cognitivo). 5 ítems, puntaje 5–35. ' +
+      'Libre para uso clínico y educativo.',
+    fuente: 'Diener E, Emmons RA, Larsen RJ, Griffin S (1985). J Pers Assess, 49(1), 71–75.',
+    opciones_escala: [
+      { valor: 1, etiqueta: 'Totalmente en desacuerdo' },
+      { valor: 2, etiqueta: 'En desacuerdo' },
+      { valor: 3, etiqueta: 'Ligeramente en desacuerdo' },
+      { valor: 4, etiqueta: 'Ni de acuerdo ni en desacuerdo' },
+      { valor: 5, etiqueta: 'Ligeramente de acuerdo' },
+      { valor: 6, etiqueta: 'De acuerdo' },
+      { valor: 7, etiqueta: 'Totalmente de acuerdo' },
+    ],
+    metodo_puntaje: 'suma',
+    interpretaciones: [
+      { desde: 5,  hasta: 9,  etiqueta: 'Muy insatisfecho/a',          clase: 'bg-red-100 text-red-800' },
+      { desde: 10, hasta: 14, etiqueta: 'Insatisfecho/a',               clase: 'bg-red-50 text-red-700' },
+      { desde: 15, hasta: 19, etiqueta: 'Ligeramente insatisfecho/a',   clase: 'bg-orange-100 text-orange-800' },
+      { desde: 20, hasta: 24, etiqueta: 'Ligeramente satisfecho/a',     clase: 'bg-yellow-100 text-yellow-800' },
+      { desde: 25, hasta: 29, etiqueta: 'Satisfecho/a',                 clase: 'bg-green-100 text-green-800' },
+      { desde: 30, hasta: 35, etiqueta: 'Muy satisfecho/a',             clase: 'bg-green-200 text-green-900' },
+    ],
+    items: [
+      { texto: 'En la mayoría de los aspectos, mi vida se acerca a mi ideal' },
+      { texto: 'Las condiciones de mi vida son excelentes' },
+      { texto: 'Estoy satisfecho/a con mi vida' },
+      { texto: 'Hasta ahora he conseguido las cosas importantes que quiero en la vida' },
+      { texto: 'Si pudiera vivir mi vida de nuevo, no cambiaría casi nada' },
+    ],
+  },
+];
 
 // --- Notas y actividades del expediente ------------------------------------
 

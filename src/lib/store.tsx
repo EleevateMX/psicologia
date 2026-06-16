@@ -96,7 +96,11 @@ type NuevoSeguimiento = Omit<Seguimiento, 'id' | 'created_at'>;
 type NuevoInstrumento = {
   nombre: string;
   descripcion: string | null;
-  items: { texto: string; tipo: ItemInstrumento['tipo'] }[];
+  items: { texto: string; tipo: ItemInstrumento['tipo']; inverso?: boolean }[];
+  opciones_escala?: Instrumento['opciones_escala'];
+  metodo_puntaje?: Instrumento['metodo_puntaje'];
+  interpretaciones?: Instrumento['interpretaciones'];
+  fuente?: string;
 };
 type NuevaEvaluacion = Omit<
   Evaluacion,
@@ -347,7 +351,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       created_at: ahora(),
       nombre: i.nombre,
       descripcion: i.descripcion ?? null,
-      items: i.items.map((it) => ({ id: uid(), texto: it.texto, tipo: it.tipo })),
+      items: i.items.map((it) => ({
+        id: uid(),
+        texto: it.texto,
+        tipo: it.tipo,
+        ...(it.inverso ? { inverso: true } : {}),
+      })),
+      ...(i.opciones_escala ? { opciones_escala: i.opciones_escala } : {}),
+      ...(i.metodo_puntaje ? { metodo_puntaje: i.metodo_puntaje } : {}),
+      ...(i.interpretaciones ? { interpretaciones: i.interpretaciones } : {}),
+      ...(i.fuente ? { fuente: i.fuente } : {}),
     };
     setDb((d) => ({ ...d, instrumentos: [...d.instrumentos, nuevo] }));
     return nuevo;
@@ -363,14 +376,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const agregarEvaluacion = useCallback((e: NuevaEvaluacion) => {
     setDb((d) => {
       const inst = d.instrumentos.find((i) => i.id === e.instrumento_id);
-      // Puntaje = promedio de las respuestas de los ítems de escala.
       const escalas = (inst?.items ?? []).filter((it) => it.tipo === 'escala');
+      const opciones = inst?.opciones_escala;
+      const minVal = opciones ? Math.min(...opciones.map((o) => o.valor)) : 1;
+      const maxVal = opciones ? Math.max(...opciones.map((o) => o.valor)) : 5;
+
       const valores = escalas
-        .map((it) => Number(e.respuestas[it.id]))
-        .filter((n) => !Number.isNaN(n) && n > 0);
-      const puntaje = valores.length
-        ? Math.round((valores.reduce((s, n) => s + n, 0) / valores.length) * 10) / 10
-        : null;
+        .map((it) => {
+          const raw = Number(e.respuestas[it.id]);
+          if (Number.isNaN(raw)) return NaN;
+          // Puntuación inversa: refleja el valor respecto al rango
+          return it.inverso ? maxVal + minVal - raw : raw;
+        })
+        .filter((n) => !Number.isNaN(n));
+
+      let puntaje: number | null = null;
+      if (valores.length) {
+        const suma = valores.reduce((s, n) => s + n, 0);
+        puntaje =
+          inst?.metodo_puntaje === 'suma'
+            ? Math.round(suma * 10) / 10
+            : Math.round((suma / valores.length) * 10) / 10;
+      }
+
       const nueva: Evaluacion = {
         id: uid(),
         created_at: ahora(),

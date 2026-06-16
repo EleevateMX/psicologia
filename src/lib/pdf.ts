@@ -26,7 +26,7 @@ import type {
   GuiaEntrevista,
   Entrevista,
 } from '@/lib/dominio';
-import { interpretarPuntaje, TIPO_NOTA_META } from '@/lib/dominio';
+import { interpretarPuntaje, interpretarConInstrumento, TIPO_NOTA_META } from '@/lib/dominio';
 
 const MARGEN = 14;
 const VERDE: [number, number, number] = [79, 119, 40]; // verde selva

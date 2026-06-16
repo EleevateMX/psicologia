@@ -16,7 +16,7 @@ import {
   calcularEdad,
   formatearFecha,
   formatearFechaHora,
-  interpretarPuntaje,
+  interpretarConInstrumento,
   TIPO_NOTA_META,
   MEDIO_CONTACTO_META,
   AVISO_CLINICO,
@@ -372,8 +372,8 @@ export default function PacienteDetallePage({
         ) : (
           <ul className="space-y-2">
             {evaluaciones.map((ev) => {
-              const interp = interpretarPuntaje(ev.puntaje);
               const inst = db.instrumentos.find((i) => i.id === ev.instrumento_id);
+              const interp = interpretarConInstrumento(ev.puntaje, inst);
               return (
                 <li key={ev.id} className="card">
                   <div className="flex flex-wrap items-center gap-2">
