@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -15,13 +16,21 @@ const ITEMS_SIDEBAR = [
   { href: '/reportes', etiqueta: 'Reportes', emoji: '📄' },
 ];
 
-// Bottom bar items (mobile): 5 slots max
+// Bottom bar items (mobile): 4 primarios + botón "Más"
 const ITEMS_MOVIL = [
   { href: '/', etiqueta: 'Inicio', emoji: '🏠' },
   { href: '/curso', etiqueta: 'Curso', emoji: '🦁' },
   { href: '/pacientes', etiqueta: 'Pacientes', emoji: '👤' },
   { href: '/evaluaciones', etiqueta: 'Evaluar', emoji: '📋' },
+];
+
+// Secciones que viven en el menú "Más" del móvil
+const ITEMS_MAS = [
+  { href: '/ninos', etiqueta: 'Fichas del Curso', emoji: '🐾' },
+  { href: '/guias', etiqueta: 'Guías de entrevista', emoji: '📝' },
+  { href: '/analisis', etiqueta: 'Análisis', emoji: '📊' },
   { href: '/reportes', etiqueta: 'Reportes', emoji: '📄' },
+  { href: '/ajustes', etiqueta: 'Ajustes y respaldo', emoji: '⚙️' },
 ];
 
 function activo(pathname: string, href: string): boolean {
@@ -79,23 +88,78 @@ export function BarraLateral() {
 
 export function BarraInferior() {
   const pathname = usePathname();
+  const [masAbierto, setMasAbierto] = useState(false);
+  const masActivo = ITEMS_MAS.some((it) => activo(pathname, it.href));
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-brand-100 bg-white/95 backdrop-blur md:hidden">
-      {ITEMS_MOVIL.map((it) => (
-        <Link
-          key={it.href}
-          href={it.href}
-          aria-current={activo(pathname, it.href) ? 'page' : undefined}
+    <>
+      {/* Hoja "Más" (bottom sheet) */}
+      {masAbierto && (
+        <div className="fixed inset-0 z-30 md:hidden" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            aria-label="Cerrar menú"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => setMasAbierto(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-brand-100 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl">
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-200" />
+            <ul className="space-y-1">
+              {ITEMS_MAS.map((it) => (
+                <li key={it.href}>
+                  <Link
+                    href={it.href}
+                    onClick={() => setMasAbierto(false)}
+                    aria-current={activo(pathname, it.href) ? 'page' : undefined}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
+                      activo(pathname, it.href)
+                        ? 'bg-brand-100 text-brand-800'
+                        : 'text-slate-600 hover:bg-brand-50'
+                    }`}
+                  >
+                    <span aria-hidden className="text-xl">
+                      {it.emoji}
+                    </span>
+                    {it.etiqueta}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-brand-100 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+        {ITEMS_MOVIL.map((it) => (
+          <Link
+            key={it.href}
+            href={it.href}
+            aria-current={activo(pathname, it.href) ? 'page' : undefined}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] ${
+              activo(pathname, it.href) ? 'text-brand-700' : 'text-slate-500'
+            }`}
+          >
+            <span aria-hidden className="text-lg">
+              {it.emoji}
+            </span>
+            {it.etiqueta}
+          </Link>
+        ))}
+        <button
+          type="button"
+          onClick={() => setMasAbierto((v) => !v)}
+          aria-expanded={masAbierto}
+          aria-label="Más secciones"
           className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] ${
-            activo(pathname, it.href) ? 'text-brand-700' : 'text-slate-500'
+            masActivo || masAbierto ? 'text-brand-700' : 'text-slate-500'
           }`}
         >
           <span aria-hidden className="text-lg">
-            {it.emoji}
+            ☰
           </span>
-          {it.etiqueta}
-        </Link>
-      ))}
-    </nav>
+          Más
+        </button>
+      </nav>
+    </>
   );
 }

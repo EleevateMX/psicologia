@@ -5,6 +5,7 @@ import { useStore } from '@/lib/store';
 import { Cargando } from '@/components/Cargando';
 import { BotonAccion } from '@/components/BotonAccion';
 import { AvisoConfidencialidad } from '@/components/AvisoConfidencialidad';
+import { SincronizacionNube } from '@/components/SincronizacionNube';
 import { FIRMANTE } from '@/lib/config';
 
 export default function AjustesPage() {
@@ -49,7 +50,8 @@ export default function AjustesPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-800">⚙️ Ajustes y respaldo</h1>
         <p className="text-sm text-slate-500">
-          Tus datos viven sólo en este dispositivo.
+          Tus datos viven en este dispositivo. La sincronización en la nube es
+          opcional y siempre cifrada de extremo a extremo.
         </p>
       </div>
 
@@ -95,6 +97,8 @@ export default function AjustesPage() {
           />
         </div>
       </section>
+
+      <SincronizacionNube />
 
       <section className="card space-y-3">
         <h2 className="text-sm font-semibold text-slate-700">🧪 Datos de ejemplo</h2>
