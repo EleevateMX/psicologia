@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { Cargando } from '@/components/Cargando';
-import { ANIMO_OPCIONES, calcularEdad, type Semaforo } from '@/lib/dominio';
+import { calcularEdad, type Semaforo } from '@/lib/dominio';
 import { BotonReporteGeneral } from '@/components/reportes/BotonesReporte';
 import { AvisoConfidencialidad } from '@/components/AvisoConfidencialidad';
 import type { FilaGeneral } from '@/lib/pdf';
@@ -23,7 +23,7 @@ export default function ReportesPage() {
     let animo = '—';
     if (misCheck.length) {
       const p = misCheck.reduce((s, c) => s + c.animo, 0) / misCheck.length;
-      animo = `${ANIMO_OPCIONES[Math.min(4, Math.max(0, Math.round(p) - 1))].emoji} ${p.toFixed(1)}`;
+      animo = `${p.toFixed(1)} / 5`;
     }
 
     const alertasAbiertas = db.alertas.filter(

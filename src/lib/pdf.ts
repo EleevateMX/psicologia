@@ -151,7 +151,7 @@ export async function generarReporteIndividual(d: DatosReporteIndividual) {
       ['Observaciones registradas', String(d.observaciones.length)],
       [
         'Semáforo',
-        `${SEMAFORO_META.verde.emoji} ${dist.verde}  ·  ${SEMAFORO_META.amarillo.emoji} ${dist.amarillo}  ·  ${SEMAFORO_META.rojo.emoji} ${dist.rojo}`,
+        `Verde ${dist.verde}   ·   Amarillo ${dist.amarillo}   ·   Rojo ${dist.rojo}`,
       ],
       ['Ánimo promedio', animoPromedio(d.checkins)],
       [
@@ -169,7 +169,7 @@ export async function generarReporteIndividual(d: DatosReporteIndividual) {
   if (d.observaciones.length) {
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 6,
-      head: [['Fecha', 'Categoría', '🚦', 'Observación', 'Acompañamiento']],
+      head: [['Fecha', 'Categoría', 'Semáforo', 'Observación', 'Acompañamiento']],
       body: d.observaciones.map((o) => [
         formatearFecha(o.fecha),
         CATEGORIA_META[o.categoria].etiqueta,
@@ -266,7 +266,7 @@ export async function generarReporteGeneral(filas: FilaGeneral[]) {
 
   autoTable(doc, {
     startY: (doc as any).lastAutoTable.finalY + 6,
-    head: [['Niña/Niño', 'Grupo', 'Obs.', '🟢/🟡/🔴', 'Ánimo', 'Alertas']],
+    head: [['Niña/Niño', 'Grupo', 'Obs.', 'Verde/Amar/Rojo', 'Ánimo', 'Alertas']],
     body: filas.map((f) => [
       f.nino.nombre,
       f.nino.grupo || '—',
