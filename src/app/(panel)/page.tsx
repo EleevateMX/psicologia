@@ -62,6 +62,13 @@ export default function InicioPage() {
           activo
         />
         <Seccion
+          href="/guias"
+          emoji="📝"
+          titulo="Guías de entrevista"
+          desc="Anamnesis y guías editables que aplicas en cada expediente."
+          activo
+        />
+        <Seccion
           href="/reportes"
           emoji="📄"
           titulo="Reportes"

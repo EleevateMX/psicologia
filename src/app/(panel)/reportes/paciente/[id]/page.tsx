@@ -8,6 +8,7 @@ import {
   evaluacionesDeNino,
   alertasDeNino,
   seguimientosDeNino,
+  entrevistasDeNino,
 } from '@/lib/store';
 import { Cargando } from '@/components/Cargando';
 import { calcularEdad, AVISO_CLINICO } from '@/lib/dominio';
@@ -39,9 +40,19 @@ export default function ReportePacientePage({
   const evaluaciones = evaluacionesDeNino(db, paciente.id);
   const alertas = alertasDeNino(db, paciente.id);
   const seguimientos = seguimientosDeNino(db, paciente.id);
+  const entrevistas = entrevistasDeNino(db, paciente.id);
   const edad = calcularEdad(paciente.fecha_nacimiento);
 
-  const datos = { paciente, notas, actividades, evaluaciones, alertas, seguimientos };
+  const datos = {
+    paciente,
+    notas,
+    actividades,
+    evaluaciones,
+    alertas,
+    seguimientos,
+    entrevistas,
+    guias: db.guias,
+  };
 
   return (
     <div className="space-y-6">

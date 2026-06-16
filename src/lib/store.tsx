@@ -27,12 +27,20 @@ import type {
   ItemInstrumento,
   Nota,
   Actividad,
+  GuiaEntrevista,
+  SeccionGuia,
+  Entrevista,
   EstadoAlerta,
   EstadoSeguimiento,
   EstadoActividad,
   MedioContacto,
 } from '@/lib/dominio';
-import { animalAleatorio, GRUPOS_SUGERIDOS, type TipoExpediente } from '@/lib/dominio';
+import {
+  animalAleatorio,
+  GRUPOS_SUGERIDOS,
+  GUIA_ANAMNESIS_ESTANDAR,
+  type TipoExpediente,
+} from '@/lib/dominio';
 
 const CLAVE = 'bitacora-verano-v1';
 
@@ -46,6 +54,8 @@ export interface BaseDatos {
   evaluaciones: Evaluacion[];
   notas: Nota[];
   actividades: Actividad[];
+  guias: GuiaEntrevista[];
+  entrevistas: Entrevista[];
 }
 
 const VACIA: BaseDatos = {
@@ -58,6 +68,8 @@ const VACIA: BaseDatos = {
   evaluaciones: [],
   notas: [],
   actividades: [],
+  guias: [],
+  entrevistas: [],
 };
 
 function uid(): string {
@@ -92,6 +104,15 @@ type NuevaEvaluacion = Omit<
 > & { instrumento_nombre?: string };
 type NuevaNota = Omit<Nota, 'id' | 'created_at'>;
 type NuevaActividad = Omit<Actividad, 'id' | 'created_at'>;
+type SeccionBorrador = {
+  titulo: string;
+  preguntas: { texto: string; ayuda?: string | null }[];
+};
+type NuevaGuia = { nombre: string; descripcion: string | null; secciones: SeccionBorrador[] };
+type NuevaEntrevista = Omit<
+  Entrevista,
+  'id' | 'created_at' | 'guia_nombre'
+> & { guia_nombre?: string };
 
 interface StoreCtx {
   db: BaseDatos;
@@ -123,6 +144,14 @@ interface StoreCtx {
   agregarActividad: (a: NuevaActividad) => void;
   cambiarEstadoActividad: (id: string, estado: EstadoActividad) => void;
   eliminarActividad: (id: string) => void;
+  // Guías de entrevista
+  agregarGuia: (g: NuevaGuia) => GuiaEntrevista;
+  actualizarGuia: (id: string, g: NuevaGuia) => void;
+  eliminarGuia: (id: string) => void;
+  sembrarGuiaEstandar: () => GuiaEntrevista;
+  // Entrevistas
+  agregarEntrevista: (e: NuevaEntrevista) => void;
+  eliminarEntrevista: (id: string) => void;
   // Datos
   cargarEjemplo: () => void;
   limpiarTodo: () => void;
@@ -200,6 +229,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       evaluaciones: d.evaluaciones.filter((e) => e.nino_id !== id),
       notas: d.notas.filter((n) => n.nino_id !== id),
       actividades: d.actividades.filter((a) => a.nino_id !== id),
+      guias: d.guias,
+      entrevistas: d.entrevistas.filter((e) => e.nino_id !== id),
     }));
   }, []);
 
@@ -412,6 +443,76 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  // Construye una guía con ids estables a partir de un borrador de secciones.
+  function construirGuia(g: NuevaGuia): GuiaEntrevista {
+    return {
+      id: uid(),
+      created_at: ahora(),
+      nombre: g.nombre,
+      descripcion: g.descripcion ?? null,
+      secciones: g.secciones.map<SeccionGuia>((s) => ({
+        id: uid(),
+        titulo: s.titulo,
+        preguntas: s.preguntas.map((p) => ({
+          id: uid(),
+          texto: p.texto,
+          ayuda: p.ayuda ?? null,
+        })),
+      })),
+    };
+  }
+
+  const agregarGuia = useCallback((g: NuevaGuia): GuiaEntrevista => {
+    const nueva = construirGuia(g);
+    setDb((d) => ({ ...d, guias: [...d.guias, nueva] }));
+    return nueva;
+  }, []);
+
+  const actualizarGuia = useCallback((id: string, g: NuevaGuia) => {
+    setDb((d) => ({
+      ...d,
+      guias: d.guias.map((gu) =>
+        gu.id === id
+          ? { ...construirGuia(g), id: gu.id, created_at: gu.created_at }
+          : gu,
+      ),
+    }));
+  }, []);
+
+  const eliminarGuia = useCallback((id: string) => {
+    setDb((d) => ({ ...d, guias: d.guias.filter((g) => g.id !== id) }));
+  }, []);
+
+  const sembrarGuiaEstandar = useCallback((): GuiaEntrevista => {
+    const nueva = construirGuia(GUIA_ANAMNESIS_ESTANDAR);
+    setDb((d) => ({ ...d, guias: [...d.guias, nueva] }));
+    return nueva;
+  }, []);
+
+  const agregarEntrevista = useCallback((e: NuevaEntrevista) => {
+    setDb((d) => {
+      const guia = d.guias.find((g) => g.id === e.guia_id);
+      const nueva: Entrevista = {
+        id: uid(),
+        created_at: ahora(),
+        nino_id: e.nino_id,
+        guia_id: e.guia_id,
+        guia_nombre: e.guia_nombre || guia?.nombre || 'Entrevista',
+        fecha: e.fecha,
+        respuestas: e.respuestas,
+        notas: e.notas ?? null,
+      };
+      return { ...d, entrevistas: [nueva, ...d.entrevistas] };
+    });
+  }, []);
+
+  const eliminarEntrevista = useCallback((id: string) => {
+    setDb((d) => ({
+      ...d,
+      entrevistas: d.entrevistas.filter((e) => e.id !== id),
+    }));
+  }, []);
+
   const cargarEjemplo = useCallback(() => setDb(datosEjemplo()), []);
   const limpiarTodo = useCallback(() => setDb(VACIA), []);
   const exportar = useCallback(() => JSON.stringify(db, null, 2), [db]);
@@ -448,6 +549,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       agregarActividad,
       cambiarEstadoActividad,
       eliminarActividad,
+      agregarGuia,
+      actualizarGuia,
+      eliminarGuia,
+      sembrarGuiaEstandar,
+      agregarEntrevista,
+      eliminarEntrevista,
       cargarEjemplo,
       limpiarTodo,
       exportar,
@@ -475,6 +582,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       agregarActividad,
       cambiarEstadoActividad,
       eliminarActividad,
+      agregarGuia,
+      actualizarGuia,
+      eliminarGuia,
+      sembrarGuiaEstandar,
+      agregarEntrevista,
+      eliminarEntrevista,
       cargarEjemplo,
       limpiarTodo,
       exportar,
@@ -526,6 +639,11 @@ export function notasDeNino(db: BaseDatos, ninoId: string): Nota[] {
 export function actividadesDeNino(db: BaseDatos, ninoId: string): Actividad[] {
   return db.actividades
     .filter((a) => a.nino_id === ninoId)
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+}
+export function entrevistasDeNino(db: BaseDatos, ninoId: string): Entrevista[] {
+  return db.entrevistas
+    .filter((e) => e.nino_id === ninoId)
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 }
 
@@ -721,5 +839,7 @@ function datosEjemplo(): BaseDatos {
     evaluaciones,
     notas,
     actividades,
+    guias: [],
+    entrevistas: [],
   };
 }

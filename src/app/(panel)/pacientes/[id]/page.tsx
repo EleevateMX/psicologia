@@ -8,6 +8,7 @@ import {
   evaluacionesDeNino,
   alertasDeNino,
   seguimientosDeNino,
+  entrevistasDeNino,
 } from '@/lib/store';
 import { Cargando } from '@/components/Cargando';
 import { txtOrNull } from '@/lib/form';
@@ -29,6 +30,7 @@ import { ActividadForm } from '@/components/forms/ActividadForm';
 import { AlertaForm } from '@/components/forms/AlertaForm';
 import { SeguimientoForm } from '@/components/forms/SeguimientoForm';
 import { AplicarEvaluacion } from '@/components/forms/AplicarEvaluacion';
+import { AplicarEntrevista } from '@/components/forms/AplicarEntrevista';
 import { BotonAccion } from '@/components/BotonAccion';
 
 export default function PacienteDetallePage({
@@ -58,6 +60,7 @@ export default function PacienteDetallePage({
   const evaluaciones = evaluacionesDeNino(db, paciente.id);
   const alertas = alertasDeNino(db, paciente.id);
   const seguimientos = seguimientosDeNino(db, paciente.id);
+  const entrevistas = entrevistasDeNino(db, paciente.id);
   const edad = calcularEdad(paciente.fecha_nacimiento);
   const alertasAbiertas = alertas.filter((a) => a.estado !== 'cerrada');
 
@@ -168,6 +171,92 @@ export default function PacienteDetallePage({
             Actualizar información clínica →
           </Link>
         </p>
+      </section>
+
+      {/* Entrevistas / anamnesis */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700">
+          🗒️ Entrevistas ({entrevistas.length})
+        </h2>
+        <AplicarEntrevista ninoId={paciente.id} />
+        {entrevistas.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            Sin entrevistas registradas. Aplica una{' '}
+            <Link href="/guias" className="text-brand-600 hover:underline">
+              guía de entrevista
+            </Link>{' '}
+            para iniciar la anamnesis.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {entrevistas.map((ent) => {
+              const guia = db.guias.find((g) => g.id === ent.guia_id);
+              return (
+                <li key={ent.id} className="card">
+                  <details>
+                    <summary className="flex cursor-pointer flex-wrap items-center gap-2">
+                      <span className="font-medium text-slate-800">
+                        {ent.guia_nombre}
+                      </span>
+                      <span className="ml-auto text-xs text-slate-400">
+                        {formatearFecha(ent.fecha)}
+                      </span>
+                    </summary>
+                    <div className="mt-3 space-y-3">
+                      {guia ? (
+                        guia.secciones.map((s) => {
+                          const conResp = s.preguntas.filter(
+                            (p) => (ent.respuestas[p.id] ?? '').trim() !== '',
+                          );
+                          if (conResp.length === 0) return null;
+                          return (
+                            <div key={s.id}>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
+                                {s.titulo}
+                              </p>
+                              <dl className="mt-1 space-y-1.5">
+                                {conResp.map((p) => (
+                                  <div key={p.id}>
+                                    <dt className="text-sm text-slate-500">
+                                      {p.texto}
+                                    </dt>
+                                    <dd className="whitespace-pre-wrap text-sm text-slate-700">
+                                      {ent.respuestas[p.id]}
+                                    </dd>
+                                  </div>
+                                ))}
+                              </dl>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p className="text-xs italic text-slate-400">
+                          La guía original fue eliminada; se conservan las
+                          respuestas registradas.
+                        </p>
+                      )}
+                      {ent.notas && (
+                        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                          <span className="font-medium">Notas: </span>
+                          {ent.notas}
+                        </p>
+                      )}
+                    </div>
+                  </details>
+                  <div className="mt-2 text-right">
+                    <BotonAccion
+                      accion={() => store.eliminarEntrevista(ent.id)}
+                      confirmar="¿Eliminar esta entrevista?"
+                      className="text-xs text-slate-400 hover:text-red-600"
+                    >
+                      Eliminar
+                    </BotonAccion>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       {/* Notas de sesión */}

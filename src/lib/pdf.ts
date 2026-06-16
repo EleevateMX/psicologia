@@ -23,6 +23,8 @@ import type {
   Evaluacion,
   Nota,
   Actividad,
+  GuiaEntrevista,
+  Entrevista,
 } from '@/lib/dominio';
 import { interpretarPuntaje, TIPO_NOTA_META } from '@/lib/dominio';
 
@@ -382,6 +384,8 @@ export interface DatosReportePaciente {
   alertas: Alerta[];
   seguimientos: Seguimiento[];
   evaluaciones: Evaluacion[];
+  entrevistas?: Entrevista[];
+  guias?: GuiaEntrevista[];
 }
 
 export async function generarReportePaciente(d: DatosReportePaciente) {
@@ -443,6 +447,51 @@ export async function generarReportePaciente(d: DatosReportePaciente) {
     styles: { fontSize: 9 },
     margin: { left: MARGEN, right: MARGEN },
   });
+
+  // Entrevistas (anamnesis)
+  if (d.entrevistas && d.entrevistas.length) {
+    for (const ent of d.entrevistas) {
+      const guia = (d.guias ?? []).find((g) => g.id === ent.guia_id);
+      const filas: [string, string][] = [];
+      if (guia) {
+        for (const s of guia.secciones) {
+          const respondidas = s.preguntas.filter(
+            (p) => (ent.respuestas[p.id] ?? '').trim() !== '',
+          );
+          if (respondidas.length === 0) continue;
+          // fila de sección (subtitulo)
+          filas.push([`§ ${s.titulo}`, '']);
+          for (const p of respondidas) {
+            filas.push([p.texto, ent.respuestas[p.id]]);
+          }
+        }
+      } else {
+        Object.values(ent.respuestas).forEach((v, i) =>
+          filas.push([`Respuesta ${i + 1}`, String(v)]),
+        );
+      }
+      if (ent.notas) filas.push(['Notas / impresiones', ent.notas]);
+      if (filas.length === 0) continue;
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 6,
+        head: [[`Entrevista: ${ent.guia_nombre}`, formatearFecha(ent.fecha)]],
+        body: filas,
+        theme: 'grid',
+        headStyles: { fillColor: VERDE },
+        styles: { fontSize: 8, valign: 'top', cellPadding: 1.5 },
+        columnStyles: { 0: { cellWidth: 70, textColor: [90, 90, 90] } },
+        // Resalta las filas de sección
+        didParseCell: (data: any) => {
+          if (data.section === 'body' && String(data.row.raw[0]).startsWith('§')) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [235, 240, 226];
+            data.cell.styles.textColor = [60, 90, 30];
+          }
+        },
+        margin: { left: MARGEN, right: MARGEN },
+      });
+    }
+  }
 
   // Notas
   if (d.notas.length) {

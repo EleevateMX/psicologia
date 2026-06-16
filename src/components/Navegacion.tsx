@@ -10,6 +10,7 @@ const ITEMS_SIDEBAR = [
   { href: '/ninos', etiqueta: 'Fichas del Curso', emoji: '🐾', sub: true },
   { href: '/pacientes', etiqueta: 'Pacientes', emoji: '👤' },
   { href: '/evaluaciones', etiqueta: 'Evaluaciones', emoji: '📋' },
+  { href: '/guias', etiqueta: 'Guías de entrevista', emoji: '📝' },
   { href: '/reportes', etiqueta: 'Reportes', emoji: '📄' },
 ];
 

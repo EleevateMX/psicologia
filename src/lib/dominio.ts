@@ -305,6 +305,140 @@ export interface Evaluacion {
   created_at: string;
 }
 
+// --- Guías de entrevista (anamnesis) ---------------------------------------
+
+export interface PreguntaGuia {
+  id: string;
+  texto: string;
+  ayuda?: string | null;
+}
+
+export interface SeccionGuia {
+  id: string;
+  titulo: string;
+  preguntas: PreguntaGuia[];
+}
+
+/** Plantilla de guía de entrevista (editable por la persona usuaria). */
+export interface GuiaEntrevista {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  secciones: SeccionGuia[];
+  created_at: string;
+}
+
+/** Aplicación de una guía de entrevista a una persona en una fecha. */
+export interface Entrevista {
+  id: string;
+  nino_id: string;
+  guia_id: string;
+  guia_nombre: string;
+  fecha: string;
+  // respuestas[preguntaId] = texto de la respuesta
+  respuestas: Record<string, string>;
+  notas: string | null;
+  created_at: string;
+}
+
+/**
+ * Estructura de la guía de anamnesis estándar precargada. Sin ids: el almacén
+ * genera ids estables al sembrarla. Enfoque clínico en formación; la persona
+ * usuaria puede editar, agregar o quitar secciones y preguntas libremente.
+ */
+export const GUIA_ANAMNESIS_ESTANDAR: {
+  nombre: string;
+  descripcion: string;
+  secciones: { titulo: string; preguntas: { texto: string; ayuda?: string }[] }[];
+} = {
+  nombre: 'Guía de entrevista clínica (anamnesis)',
+  descripcion:
+    'Historia clínica psicológica de primera entrevista. Adáptala a cada ' +
+    'persona; no todas las preguntas aplican a todos los casos.',
+  secciones: [
+    {
+      titulo: 'Ficha de identificación',
+      preguntas: [
+        { texto: 'Nombre y cómo prefiere que le llamen' },
+        { texto: 'Edad y fecha de nacimiento' },
+        { texto: 'Escolaridad / grado de estudios' },
+        { texto: 'Ocupación actual' },
+        { texto: 'Estado civil y con quién vive' },
+        { texto: 'Lugar de origen y residencia' },
+        { texto: '¿Quién refiere o cómo llega a consulta?' },
+      ],
+    },
+    {
+      titulo: 'Motivo de consulta',
+      preguntas: [
+        { texto: '¿Qué le trae a consulta? (en sus propias palabras)' },
+        { texto: '¿Desde cuándo ocurre lo que le preocupa?' },
+        { texto: '¿Qué espera lograr con el acompañamiento?' },
+      ],
+    },
+    {
+      titulo: 'Historia del padecimiento actual',
+      preguntas: [
+        { texto: '¿Cómo y cuándo comenzó?', ayuda: 'Inicio, contexto, posibles desencadenantes.' },
+        { texto: '¿Cómo ha evolucionado con el tiempo?' },
+        { texto: '¿Qué lo agrava y qué lo alivia?' },
+        { texto: '¿Cómo afecta su vida diaria (sueño, apetito, trabajo, relaciones)?' },
+        { texto: '¿Qué ha intentado para resolverlo?' },
+      ],
+    },
+    {
+      titulo: 'Antecedentes personales (desarrollo y salud)',
+      preguntas: [
+        { texto: 'Embarazo, parto y desarrollo temprano', ayuda: 'Si la persona lo conoce o si es un caso infantil.' },
+        { texto: 'Enfermedades, hospitalizaciones o cirugías relevantes' },
+        { texto: 'Atención psicológica o psiquiátrica previa y tratamientos' },
+        { texto: 'Consumo de sustancias o medicamentos actuales' },
+      ],
+    },
+    {
+      titulo: 'Antecedentes familiares',
+      preguntas: [
+        { texto: 'Estructura y dinámica familiar', ayuda: 'Con quién creció, relaciones significativas.' },
+        { texto: 'Antecedentes de salud mental en la familia' },
+        { texto: 'Eventos familiares relevantes (pérdidas, cambios, etc.)' },
+      ],
+    },
+    {
+      titulo: 'Historia escolar / laboral',
+      preguntas: [
+        { texto: 'Desempeño y experiencia escolar' },
+        { texto: 'Relación con compañeros, docentes o figuras de autoridad' },
+        { texto: 'Situación laboral actual y satisfacción' },
+      ],
+    },
+    {
+      titulo: 'Área social y de apoyo',
+      preguntas: [
+        { texto: 'Amistades y vínculos cercanos' },
+        { texto: 'Actividades recreativas e intereses' },
+        { texto: 'Red de apoyo con la que cuenta' },
+      ],
+    },
+    {
+      titulo: 'Observación clínica (examen mental)',
+      preguntas: [
+        { texto: 'Apariencia, actitud y contacto durante la entrevista' },
+        { texto: 'Estado de ánimo y afecto observados' },
+        { texto: 'Lenguaje, pensamiento y atención' },
+        { texto: 'Orientación (persona, tiempo, lugar)' },
+      ],
+    },
+    {
+      titulo: 'Impresión y plan inicial',
+      preguntas: [
+        { texto: 'Fortalezas y recursos de la persona' },
+        { texto: 'Áreas de oportunidad / necesidades de acompañamiento' },
+        { texto: 'Acuerdos y plan de trabajo inicial' },
+      ],
+    },
+  ],
+};
+
 /** Escala Likert usada por los ítems de tipo "escala". */
 export const ESCALA_LIKERT: { valor: number; etiqueta: string }[] = [
   { valor: 1, etiqueta: 'Nunca' },
