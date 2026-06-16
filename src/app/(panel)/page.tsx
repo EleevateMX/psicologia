@@ -10,6 +10,7 @@ import {
   type Semaforo,
 } from '@/lib/dominio';
 import { SemaforoBadge, CategoriaBadge } from '@/components/Etiquetas';
+import { LineaAnimo } from '@/components/Graficas';
 import { AvisoConfidencialidad } from '@/components/AvisoConfidencialidad';
 
 function hace(dias: number): string {
@@ -51,6 +52,18 @@ export default function TableroPage() {
   const ultimasObs = [...db.observaciones]
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
     .slice(0, 6);
+
+  // Ánimo del grupo: promedio por día (últimas 2 semanas).
+  const porDia = new Map<string, { suma: number; n: number }>();
+  checkinsRecientes.forEach((c) => {
+    const e = porDia.get(c.fecha) ?? { suma: 0, n: 0 };
+    e.suma += c.animo;
+    e.n += 1;
+    porDia.set(c.fecha, e);
+  });
+  const tendenciaAnimo = Array.from(porDia.entries())
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([fecha, v]) => ({ fecha, animo: v.suma / v.n }));
 
   return (
     <div className="space-y-6">
@@ -120,6 +133,13 @@ export default function TableroPage() {
             })}
           </div>
         )}
+      </section>
+
+      <section className="card">
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">
+          📈 Ánimo del grupo (promedio diario)
+        </h2>
+        <LineaAnimo puntos={tendenciaAnimo} />
       </section>
 
       <section className="card">

@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ITEMS = [
-  { href: '/', etiqueta: 'Campamento', emoji: '🗺️' },
-  { href: '/ninos', etiqueta: 'Cachorros', emoji: '🐾' },
-  { href: '/alertas', etiqueta: 'Alertas', emoji: '🦁' },
-  { href: '/seguimientos', etiqueta: 'Tutores', emoji: '🤝' },
-  { href: '/reportes', etiqueta: 'Reportes', emoji: '📄' },
+  { href: '/', etiqueta: 'Campamento', corto: 'Base', emoji: '🗺️' },
+  { href: '/ninos', etiqueta: 'Cachorros', corto: 'Niños', emoji: '🐾' },
+  { href: '/evaluaciones', etiqueta: 'Evaluaciones', corto: 'Evaluar', emoji: '📋' },
+  { href: '/alertas', etiqueta: 'Alertas', corto: 'Alertas', emoji: '🦁' },
+  { href: '/seguimientos', etiqueta: 'Tutores', corto: 'Tutores', emoji: '🤝' },
+  { href: '/reportes', etiqueta: 'Reportes', corto: 'Reportes', emoji: '📄' },
 ];
 
 function activo(pathname: string, href: string): boolean {
@@ -78,7 +79,7 @@ export function BarraInferior() {
           <span aria-hidden className="text-lg">
             {it.emoji}
           </span>
-          {it.etiqueta}
+          {it.corto}
         </Link>
       ))}
     </nav>

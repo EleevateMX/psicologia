@@ -22,6 +22,9 @@ import type {
   CheckinAnimo,
   Alerta,
   Seguimiento,
+  Instrumento,
+  Evaluacion,
+  ItemInstrumento,
   EstadoAlerta,
   EstadoSeguimiento,
   MedioContacto,
@@ -36,6 +39,8 @@ export interface BaseDatos {
   checkins: CheckinAnimo[];
   alertas: Alerta[];
   seguimientos: Seguimiento[];
+  instrumentos: Instrumento[];
+  evaluaciones: Evaluacion[];
 }
 
 const VACIA: BaseDatos = {
@@ -44,6 +49,8 @@ const VACIA: BaseDatos = {
   checkins: [],
   alertas: [],
   seguimientos: [],
+  instrumentos: [],
+  evaluaciones: [],
 };
 
 function uid(): string {
@@ -66,6 +73,15 @@ type NuevaObservacion = Omit<Observacion, 'id' | 'created_at'> & {
 type NuevoCheckin = Omit<CheckinAnimo, 'id' | 'created_at'>;
 type NuevaAlerta = Omit<Alerta, 'id' | 'created_at' | 'estado' | 'cerrada_at'>;
 type NuevoSeguimiento = Omit<Seguimiento, 'id' | 'created_at'>;
+type NuevoInstrumento = {
+  nombre: string;
+  descripcion: string | null;
+  items: { texto: string; tipo: ItemInstrumento['tipo'] }[];
+};
+type NuevaEvaluacion = Omit<
+  Evaluacion,
+  'id' | 'created_at' | 'instrumento_nombre' | 'puntaje'
+> & { instrumento_nombre?: string };
 
 interface StoreCtx {
   db: BaseDatos;
@@ -85,6 +101,11 @@ interface StoreCtx {
   // Seguimientos
   agregarSeguimiento: (s: NuevoSeguimiento) => void;
   cambiarEstadoSeguimiento: (id: string, estado: EstadoSeguimiento) => void;
+  // Evaluaciones
+  agregarInstrumento: (i: NuevoInstrumento) => Instrumento;
+  eliminarInstrumento: (id: string) => void;
+  agregarEvaluacion: (e: NuevaEvaluacion) => void;
+  eliminarEvaluacion: (id: string) => void;
   // Datos
   cargarEjemplo: () => void;
   limpiarTodo: () => void;
@@ -151,6 +172,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       checkins: d.checkins.filter((c) => c.nino_id !== id),
       alertas: d.alertas.filter((a) => a.nino_id !== id),
       seguimientos: d.seguimientos.filter((s) => s.nino_id !== id),
+      instrumentos: d.instrumentos,
+      evaluaciones: d.evaluaciones.filter((e) => e.nino_id !== id),
     }));
   }, []);
 
@@ -261,6 +284,58 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const agregarInstrumento = useCallback((i: NuevoInstrumento): Instrumento => {
+    const nuevo: Instrumento = {
+      id: uid(),
+      created_at: ahora(),
+      nombre: i.nombre,
+      descripcion: i.descripcion ?? null,
+      items: i.items.map((it) => ({ id: uid(), texto: it.texto, tipo: it.tipo })),
+    };
+    setDb((d) => ({ ...d, instrumentos: [...d.instrumentos, nuevo] }));
+    return nuevo;
+  }, []);
+
+  const eliminarInstrumento = useCallback((id: string) => {
+    setDb((d) => ({
+      ...d,
+      instrumentos: d.instrumentos.filter((i) => i.id !== id),
+    }));
+  }, []);
+
+  const agregarEvaluacion = useCallback((e: NuevaEvaluacion) => {
+    setDb((d) => {
+      const inst = d.instrumentos.find((i) => i.id === e.instrumento_id);
+      // Puntaje = promedio de las respuestas de los ítems de escala.
+      const escalas = (inst?.items ?? []).filter((it) => it.tipo === 'escala');
+      const valores = escalas
+        .map((it) => Number(e.respuestas[it.id]))
+        .filter((n) => !Number.isNaN(n) && n > 0);
+      const puntaje = valores.length
+        ? Math.round((valores.reduce((s, n) => s + n, 0) / valores.length) * 10) / 10
+        : null;
+      const nueva: Evaluacion = {
+        id: uid(),
+        created_at: ahora(),
+        nino_id: e.nino_id,
+        instrumento_id: e.instrumento_id,
+        instrumento_nombre: e.instrumento_nombre || inst?.nombre || 'Evaluación',
+        fecha: e.fecha,
+        respuestas: e.respuestas,
+        puntaje,
+        notas: e.notas ?? null,
+      };
+      return { ...d, evaluaciones: [nueva, ...d.evaluaciones] };
+    });
+  }, []);
+
+  const eliminarEvaluacion = useCallback((id: string) => {
+    setDb((d) => ({
+      ...d,
+      evaluaciones: d.evaluaciones.filter((e) => e.id !== id),
+    }));
+  }, []);
+
   const cargarEjemplo = useCallback(() => setDb(datosEjemplo()), []);
   const limpiarTodo = useCallback(() => setDb(VACIA), []);
   const exportar = useCallback(() => JSON.stringify(db, null, 2), [db]);
@@ -288,6 +363,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       cambiarEstadoAlerta,
       agregarSeguimiento,
       cambiarEstadoSeguimiento,
+      agregarInstrumento,
+      eliminarInstrumento,
+      agregarEvaluacion,
+      eliminarEvaluacion,
       cargarEjemplo,
       limpiarTodo,
       exportar,
@@ -306,6 +385,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       cambiarEstadoAlerta,
       agregarSeguimiento,
       cambiarEstadoSeguimiento,
+      agregarInstrumento,
+      eliminarInstrumento,
+      agregarEvaluacion,
+      eliminarEvaluacion,
       cargarEjemplo,
       limpiarTodo,
       exportar,
@@ -342,6 +425,11 @@ export function seguimientosDeNino(
 ): Seguimiento[] {
   return db.seguimientos
     .filter((s) => s.nino_id === ninoId)
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+}
+export function evaluacionesDeNino(db: BaseDatos, ninoId: string): Evaluacion[] {
+  return db.evaluaciones
+    .filter((e) => e.nino_id === ninoId)
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 }
 
@@ -448,5 +536,38 @@ function datosEjemplo(): BaseDatos {
     },
   ];
 
-  return { ninos, observaciones, checkins, alertas: [], seguimientos };
+  const instrumentos: Instrumento[] = [
+    {
+      id: 'inst-1',
+      nombre: 'Bienestar socioemocional (breve)',
+      descripcion:
+        'Pauta breve de observación del bienestar durante el curso. ' +
+        'Enfoque no patologizante; describe conductas, no etiquetas.',
+      items: [
+        { id: 'it-1', texto: 'Se mostró contento/a durante las actividades', tipo: 'escala' },
+        { id: 'it-2', texto: 'Se relacionó con sus compañeros/as', tipo: 'escala' },
+        { id: 'it-3', texto: 'Manejó la frustración con acompañamiento', tipo: 'escala' },
+        { id: 'it-4', texto: 'Participó con interés y curiosidad', tipo: 'escala' },
+        { id: 'it-5', texto: 'Se mostró seguro/a y acompañado/a', tipo: 'escala' },
+        { id: 'it-6', texto: 'Observaciones adicionales', tipo: 'texto' },
+      ],
+      created_at: ahora(),
+    },
+  ];
+
+  const evaluaciones: Evaluacion[] = [
+    {
+      id: 'eval-1',
+      nino_id: 'ej-1',
+      instrumento_id: 'inst-1',
+      instrumento_nombre: 'Bienestar socioemocional (breve)',
+      fecha: diasAtras(1),
+      respuestas: { 'it-1': 5, 'it-2': 5, 'it-3': 4, 'it-4': 5, 'it-5': 4, 'it-6': 'Semana muy positiva.' },
+      puntaje: 4.6,
+      notas: null,
+      created_at: ahora(),
+    },
+  ];
+
+  return { ninos, observaciones, checkins, alertas: [], seguimientos, instrumentos, evaluaciones };
 }

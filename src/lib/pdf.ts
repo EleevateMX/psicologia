@@ -19,7 +19,9 @@ import type {
   CheckinAnimo,
   Alerta,
   Seguimiento,
+  Evaluacion,
 } from '@/lib/dominio';
+import { interpretarPuntaje } from '@/lib/dominio';
 
 const MARGEN = 14;
 const VERDE: [number, number, number] = [79, 119, 40]; // verde selva
@@ -113,6 +115,7 @@ export interface DatosReporteIndividual {
   checkins: CheckinAnimo[];
   alertas: Alerta[];
   seguimientos: Seguimiento[];
+  evaluaciones: Evaluacion[];
 }
 
 export async function generarReporteIndividual(d: DatosReporteIndividual) {
@@ -217,6 +220,25 @@ export async function generarReporteIndividual(d: DatosReporteIndividual) {
         MEDIO_CONTACTO_META[s.medio],
         s.resumen,
         s.acuerdos || '—',
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: VERDE },
+      styles: { fontSize: 8, valign: 'top' },
+      margin: { left: MARGEN, right: MARGEN },
+    });
+  }
+
+  // Evaluaciones aplicadas
+  if (d.evaluaciones.length) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [['Fecha', 'Instrumento', 'Puntaje', 'Valoración', 'Notas']],
+      body: d.evaluaciones.map((e) => [
+        formatearFecha(e.fecha),
+        e.instrumento_nombre,
+        e.puntaje != null ? `${e.puntaje.toFixed(1)}/5` : '—',
+        interpretarPuntaje(e.puntaje).etiqueta,
+        e.notas || '—',
       ]),
       theme: 'striped',
       headStyles: { fillColor: VERDE },

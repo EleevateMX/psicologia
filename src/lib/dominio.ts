@@ -213,6 +213,58 @@ export interface Seguimiento {
   created_at: string;
 }
 
+// --- Evaluaciones / instrumentos -------------------------------------------
+
+export type TipoItem = 'escala' | 'texto';
+
+export interface ItemInstrumento {
+  id: string;
+  texto: string;
+  tipo: TipoItem;
+}
+
+/** Plantilla de evaluación (instrumento) definida por la persona usuaria. */
+export interface Instrumento {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  items: ItemInstrumento[];
+  created_at: string;
+}
+
+/** Aplicación de un instrumento a un niño en una fecha. */
+export interface Evaluacion {
+  id: string;
+  nino_id: string;
+  instrumento_id: string;
+  instrumento_nombre: string;
+  fecha: string;
+  respuestas: Record<string, number | string>;
+  puntaje: number | null; // promedio de los ítems de escala (1–5)
+  notas: string | null;
+  created_at: string;
+}
+
+/** Escala Likert usada por los ítems de tipo "escala". */
+export const ESCALA_LIKERT: { valor: number; etiqueta: string }[] = [
+  { valor: 1, etiqueta: 'Nunca' },
+  { valor: 2, etiqueta: 'Casi nunca' },
+  { valor: 3, etiqueta: 'A veces' },
+  { valor: 4, etiqueta: 'Casi siempre' },
+  { valor: 5, etiqueta: 'Siempre' },
+];
+
+/** Interpretación cualitativa, no diagnóstica, de un puntaje promedio 1–5. */
+export function interpretarPuntaje(p: number | null): {
+  etiqueta: string;
+  clase: string;
+} {
+  if (p == null) return { etiqueta: 'Sin puntaje', clase: 'bg-slate-100 text-slate-600' };
+  if (p >= 4) return { etiqueta: 'Favorable', clase: 'bg-green-100 text-green-800' };
+  if (p >= 2.5) return { etiqueta: 'En desarrollo', clase: 'bg-yellow-100 text-yellow-800' };
+  return { etiqueta: 'Requiere apoyo', clase: 'bg-red-100 text-red-800' };
+}
+
 // ---------------------------------------------------------------------------
 // Utilidades
 // ---------------------------------------------------------------------------

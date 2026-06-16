@@ -7,6 +7,7 @@ import {
   checkinsDeNino,
   alertasDeNino,
   seguimientosDeNino,
+  evaluacionesDeNino,
 } from '@/lib/store';
 import { Cargando } from '@/components/Cargando';
 import { txt, txtOrNull } from '@/lib/form';
@@ -14,6 +15,7 @@ import {
   calcularEdad,
   formatearFecha,
   formatearFechaHora,
+  interpretarPuntaje,
   MEDIO_CONTACTO_META,
   type Categoria,
   type Semaforo,
@@ -26,10 +28,12 @@ import {
   EstadoAlertaBadge,
   AnimoChip,
 } from '@/components/Etiquetas';
+import { LineaAnimo, BarrasSemaforo } from '@/components/Graficas';
 import { ObservacionForm } from '@/components/forms/ObservacionForm';
 import { CheckinForm } from '@/components/forms/CheckinForm';
 import { AlertaForm } from '@/components/forms/AlertaForm';
 import { SeguimientoForm } from '@/components/forms/SeguimientoForm';
+import { AplicarEvaluacion } from '@/components/forms/AplicarEvaluacion';
 import { BotonAccion } from '@/components/BotonAccion';
 
 export default function NinoDetallePage({
@@ -57,8 +61,17 @@ export default function NinoDetallePage({
   const checkins = checkinsDeNino(db, nino.id);
   const alertas = alertasDeNino(db, nino.id);
   const seguimientos = seguimientosDeNino(db, nino.id);
+  const evaluaciones = evaluacionesDeNino(db, nino.id);
   const edad = calcularEdad(nino.fecha_nacimiento);
   const alertasAbiertas = alertas.filter((a) => a.estado !== 'cerrada');
+
+  // Datos para el bloque de análisis
+  const puntosAnimo = [...checkins]
+    .sort((a, b) => (a.fecha < b.fecha ? -1 : 1))
+    .slice(-12)
+    .map((c) => ({ fecha: c.fecha, animo: c.animo }));
+  const distSemaforo: Record<Semaforo, number> = { verde: 0, amarillo: 0, rojo: 0 };
+  observaciones.forEach((o) => distSemaforo[o.semaforo]++);
 
   // Handlers (escriben en el almacén local) ---------------------------------
   const crearObservacion = (form: FormData) =>
@@ -147,6 +160,27 @@ export default function NinoDetallePage({
         )}
       </div>
 
+      {/* Análisis */}
+      <section className="card">
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">
+          📈 Análisis del expediente
+        </h2>
+        <div className="grid gap-5 md:grid-cols-2">
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+              Evolución del ánimo
+            </p>
+            <LineaAnimo puntos={puntosAnimo} />
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+              Semáforo de observaciones
+            </p>
+            <BarrasSemaforo dist={distSemaforo} />
+          </div>
+        </div>
+      </section>
+
       {/* Check-in de ánimo */}
       <section className="card">
         <h2 className="mb-3 text-sm font-semibold text-slate-700">
@@ -211,6 +245,71 @@ export default function NinoDetallePage({
                 </div>
               </li>
             ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Evaluaciones */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700">
+          📋 Evaluaciones ({evaluaciones.length})
+        </h2>
+        <AplicarEvaluacion ninoId={nino.id} />
+        {evaluaciones.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            Sin evaluaciones aplicadas todavía.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {evaluaciones.map((ev) => {
+              const interp = interpretarPuntaje(ev.puntaje);
+              const inst = db.instrumentos.find((i) => i.id === ev.instrumento_id);
+              return (
+                <li key={ev.id} className="card">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-slate-800">
+                      {ev.instrumento_nombre}
+                    </span>
+                    {ev.puntaje != null && (
+                      <span className={`badge border-transparent ${interp.clase}`}>
+                        {ev.puntaje.toFixed(1)}/5 · {interp.etiqueta}
+                      </span>
+                    )}
+                    <span className="ml-auto text-xs text-slate-400">
+                      {formatearFecha(ev.fecha)}
+                    </span>
+                  </div>
+                  {inst && (
+                    <ul className="mt-2 space-y-0.5 text-sm text-slate-600">
+                      {inst.items.map((it) => {
+                        const r = ev.respuestas[it.id];
+                        if (r === undefined || r === '') return null;
+                        return (
+                          <li key={it.id}>
+                            <span className="text-slate-500">{it.texto}:</span>{' '}
+                            <span className="font-medium">{String(r)}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {ev.notas && (
+                    <p className="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                      {ev.notas}
+                    </p>
+                  )}
+                  <div className="mt-2 text-right">
+                    <BotonAccion
+                      accion={() => store.eliminarEvaluacion(ev.id)}
+                      confirmar="¿Eliminar esta evaluación?"
+                      className="text-xs text-slate-400 hover:text-red-600"
+                    >
+                      Eliminar
+                    </BotonAccion>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
