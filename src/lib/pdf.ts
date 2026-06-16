@@ -3,6 +3,7 @@
 import type { jsPDF } from 'jspdf';
 import {
   AVISO_CONFIDENCIALIDAD,
+  AVISO_CLINICO,
   SEMAFORO_META,
   CATEGORIA_META,
   ANIMO_OPCIONES,
@@ -368,4 +369,179 @@ function slug(s: string): string {
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+// ---------------------------------------------------------------------------
+// Reporte clínico (paciente)
+// ---------------------------------------------------------------------------
+
+export interface DatosReportePaciente {
+  paciente: Nino;
+  notas: Nota[];
+  actividades: Actividad[];
+  alertas: Alerta[];
+  seguimientos: Seguimiento[];
+  evaluaciones: Evaluacion[];
+}
+
+export async function generarReportePaciente(d: DatosReportePaciente) {
+  const { JsPDF, autoTable } = await cargarPdf();
+  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
+  const edad = calcularEdad(d.paciente.fecha_nacimiento);
+  encabezado(doc, 'Reporte clínico · Expediente', `Emitido: ${fechaEmision()}`);
+
+  let y = 32;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(d.paciente.nombre, MARGEN, y);
+  y += 6;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(90);
+  const linea = [
+    edad != null ? `Edad: ${edad} anios` : null,
+    d.paciente.ocupacion ? `Ocupacion: ${d.paciente.ocupacion}` : null,
+    d.paciente.telefono ? `Tel: ${d.paciente.telefono}` : null,
+    d.paciente.correo ? d.paciente.correo : null,
+  ]
+    .filter(Boolean)
+    .join('    ');
+  if (linea) doc.text(linea, MARGEN, y);
+  doc.setTextColor(0);
+  y += 5;
+
+  // Resumen clínico
+  autoTable(doc, {
+    startY: y,
+    head: [['Informacion clinica', '']],
+    body: [
+      ['Motivo de consulta', d.paciente.motivo_consulta || '—'],
+      ['Antecedentes', d.paciente.antecedentes || '—'],
+      ['Plan de trabajo / objetivos', d.paciente.plan_trabajo || '—'],
+      ['Notas adicionales', d.paciente.notas || '—'],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: VERDE },
+    styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
+    columnStyles: { 0: { cellWidth: 50, fontStyle: 'bold' } },
+    margin: { left: MARGEN, right: MARGEN },
+  });
+
+  // Estadísticas rápidas
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 5,
+    head: [['Resumen del expediente', '']],
+    body: [
+      ['Notas de sesion registradas', String(d.notas.length)],
+      ['Actividades', `${d.actividades.filter((a) => a.estado === 'realizada').length} realizadas / ${d.actividades.filter((a) => a.estado === 'planeada').length} planeadas`],
+      ['Evaluaciones aplicadas', String(d.evaluaciones.length)],
+      ['Alertas abiertas', String(d.alertas.filter((a) => a.estado !== 'cerrada').length)],
+      ['Seguimientos', String(d.seguimientos.length)],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: VERDE },
+    styles: { fontSize: 9 },
+    margin: { left: MARGEN, right: MARGEN },
+  });
+
+  // Notas
+  if (d.notas.length) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [['Fecha', 'Tipo', 'Nota']],
+      body: d.notas.map((n) => [
+        formatearFecha(n.fecha),
+        TIPO_NOTA_META[n.tipo].etiqueta,
+        (n.titulo ? `${n.titulo}: ` : '') + n.contenido,
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: VERDE },
+      styles: { fontSize: 8, valign: 'top' },
+      columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 24 } },
+      margin: { left: MARGEN, right: MARGEN },
+    });
+  }
+
+  // Actividades
+  if (d.actividades.length) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [['Fecha', 'Actividad', 'Objetivo', 'Estado']],
+      body: d.actividades.map((a) => [
+        formatearFecha(a.fecha),
+        (a.titulo || '') + (a.descripcion ? ` — ${a.descripcion}` : ''),
+        a.objetivo || '—',
+        a.estado === 'realizada' ? 'Realizada' : 'Planeada',
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: VERDE },
+      styles: { fontSize: 8, valign: 'top' },
+      margin: { left: MARGEN, right: MARGEN },
+    });
+  }
+
+  // Evaluaciones
+  if (d.evaluaciones.length) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [['Fecha', 'Instrumento', 'Puntaje', 'Valoracion', 'Notas']],
+      body: d.evaluaciones.map((e) => [
+        formatearFecha(e.fecha),
+        e.instrumento_nombre,
+        e.puntaje != null ? `${e.puntaje.toFixed(1)}/5` : '—',
+        interpretarPuntaje(e.puntaje).etiqueta,
+        e.notas || '—',
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: VERDE },
+      styles: { fontSize: 8, valign: 'top' },
+      margin: { left: MARGEN, right: MARGEN },
+    });
+  }
+
+  // Alertas
+  if (d.alertas.length) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [['Situacion de atencion', 'Estado', 'Detalle']],
+      body: d.alertas.map((a) => [
+        a.titulo,
+        ESTADO_ALERTA_META[a.estado].etiqueta,
+        a.detalle || '—',
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [220, 38, 38] },
+      styles: { fontSize: 8, valign: 'top' },
+      margin: { left: MARGEN, right: MARGEN },
+    });
+  }
+
+  // Seguimientos
+  if (d.seguimientos.length) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [['Fecha', 'Medio', 'Resumen', 'Acuerdos']],
+      body: d.seguimientos.map((s) => [
+        formatearFecha(s.fecha),
+        MEDIO_CONTACTO_META[s.medio],
+        s.resumen,
+        s.acuerdos || '—',
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: VERDE },
+      styles: { fontSize: 8, valign: 'top' },
+      margin: { left: MARGEN, right: MARGEN },
+    });
+  }
+
+  // Nota de confidencialidad clínica
+  const yFinal = (doc as any).lastAutoTable?.finalY + 8 || 260;
+  const w = doc.internal.pageSize.getWidth();
+  doc.setFontSize(7.5);
+  doc.setTextColor(120);
+  doc.text(doc.splitTextToSize(AVISO_CLINICO, w - MARGEN * 2), MARGEN, yFinal);
+  doc.setTextColor(0);
+
+  pieEnCadaPagina(doc);
+  doc.save(`expediente-${slug(d.paciente.nombre)}.pdf`);
 }

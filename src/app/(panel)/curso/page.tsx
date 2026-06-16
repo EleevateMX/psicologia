@@ -24,7 +24,7 @@ export default function CursoPage() {
   if (!cargado) return <Cargando />;
 
   const desde = hace(14);
-  const ninosActivos = db.ninos.filter((n) => n.activo);
+  const ninosActivos = db.ninos.filter((n) => n.activo && (!n.tipo || n.tipo === 'verano'));
   const alertasAbiertas = db.alertas.filter((a) => a.estado !== 'cerrada');
   const seguimientosPendientes = db.seguimientos.filter(
     (s) => s.estado === 'pendiente',

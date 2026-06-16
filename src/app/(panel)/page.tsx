@@ -11,7 +11,8 @@ export default function InicioPage() {
   const { db, cargado } = useStore();
   if (!cargado) return <Cargando />;
 
-  const totalExpedientes = db.ninos.length;
+  const fichasCurso = db.ninos.filter((n) => !n.tipo || n.tipo === 'verano').length;
+  const pacientes = db.ninos.filter((n) => n.tipo === 'clinico').length;
   const alertasAbiertas = db.alertas.filter((a) => a.estado !== 'cerrada').length;
   const notas = db.notas.length;
   const actividadesPlaneadas = db.actividades.filter(
@@ -31,10 +32,10 @@ export default function InicioPage() {
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Mini valor={totalExpedientes} titulo="Expedientes" />
+          <Mini valor={fichasCurso} titulo="Fichas del Curso" />
+          <Mini valor={pacientes} titulo="Pacientes" />
           <Mini valor={notas} titulo="Notas" />
-          <Mini valor={actividadesPlaneadas} titulo="Actividades por hacer" />
-          <Mini valor={alertasAbiertas} titulo="Alertas abiertas" />
+          <Mini valor={actividadesPlaneadas} titulo="Actividades" />
         </div>
       </header>
 
@@ -47,10 +48,10 @@ export default function InicioPage() {
           activo
         />
         <Seccion
-          href="/ninos"
-          emoji="🗂️"
-          titulo="Expedientes"
-          desc="Fichas con notas, actividades, evaluaciones y seguimiento."
+          href="/pacientes"
+          emoji="👤"
+          titulo="Pacientes"
+          desc="Expedientes clínicos con motivo de consulta, notas y plan de trabajo."
           activo
         />
         <Seccion

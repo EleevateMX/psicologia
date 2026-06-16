@@ -3,12 +3,23 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const ITEMS = [
-  { href: '/', etiqueta: 'Inicio', corto: 'Inicio', emoji: '🏠' },
-  { href: '/curso', etiqueta: 'Curso de Verano', corto: 'Curso', emoji: '🦁' },
-  { href: '/ninos', etiqueta: 'Expedientes', corto: 'Fichas', emoji: '🗂️' },
-  { href: '/evaluaciones', etiqueta: 'Evaluaciones', corto: 'Evaluar', emoji: '📋' },
-  { href: '/reportes', etiqueta: 'Reportes', corto: 'Reportes', emoji: '📄' },
+// Sidebar items (desktop): full list
+const ITEMS_SIDEBAR = [
+  { href: '/', etiqueta: 'Inicio', emoji: '🏠' },
+  { href: '/curso', etiqueta: 'Curso de Verano', emoji: '🦁' },
+  { href: '/ninos', etiqueta: 'Fichas del Curso', emoji: '🐾', sub: true },
+  { href: '/pacientes', etiqueta: 'Pacientes', emoji: '👤' },
+  { href: '/evaluaciones', etiqueta: 'Evaluaciones', emoji: '📋' },
+  { href: '/reportes', etiqueta: 'Reportes', emoji: '📄' },
+];
+
+// Bottom bar items (mobile): 5 slots max
+const ITEMS_MOVIL = [
+  { href: '/', etiqueta: 'Inicio', emoji: '🏠' },
+  { href: '/curso', etiqueta: 'Curso', emoji: '🦁' },
+  { href: '/pacientes', etiqueta: 'Pacientes', emoji: '👤' },
+  { href: '/evaluaciones', etiqueta: 'Evaluar', emoji: '📋' },
+  { href: '/reportes', etiqueta: 'Reportes', emoji: '📄' },
 ];
 
 function activo(pathname: string, href: string): boolean {
@@ -28,12 +39,14 @@ export function BarraLateral() {
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-3">
-        {ITEMS.map((it) => (
+        {ITEMS_SIDEBAR.map((it) => (
           <Link
             key={it.href}
             href={it.href}
             aria-current={activo(pathname, it.href) ? 'page' : undefined}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+              'sub' in it && it.sub ? 'ml-4' : ''
+            } ${
               activo(pathname, it.href)
                 ? 'bg-brand-100 text-brand-800'
                 : 'text-slate-600 hover:bg-brand-50'
@@ -66,7 +79,7 @@ export function BarraInferior() {
   const pathname = usePathname();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-brand-100 bg-white/95 backdrop-blur md:hidden">
-      {ITEMS.map((it) => (
+      {ITEMS_MOVIL.map((it) => (
         <Link
           key={it.href}
           href={it.href}
@@ -78,7 +91,7 @@ export function BarraInferior() {
           <span aria-hidden className="text-lg">
             {it.emoji}
           </span>
-          {it.corto}
+          {it.etiqueta}
         </Link>
       ))}
     </nav>

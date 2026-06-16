@@ -9,7 +9,9 @@ export default function NinosPage() {
   const { db, cargado, cargarEjemplo } = useStore();
   if (!cargado) return <Cargando />;
 
-  const ninos = [...db.ninos].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  const ninos = [...db.ninos]
+    .filter((n) => !n.tipo || n.tipo === 'verano')
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
   const activos = ninos.filter((n) => n.activo);
   const inactivos = ninos.filter((n) => !n.activo);
 

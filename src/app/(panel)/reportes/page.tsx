@@ -12,7 +12,13 @@ export default function ReportesPage() {
   const { db, cargado } = useStore();
   if (!cargado) return <Cargando />;
 
-  const ninos = [...db.ninos].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  const ninos = [...db.ninos]
+    .filter((n) => !n.tipo || n.tipo === 'verano')
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  const pacientes = [...db.ninos]
+    .filter((n) => n.tipo === 'clinico')
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   const filas: FilaGeneral[] = ninos.map((nino) => {
     const misObs = db.observaciones.filter((o) => o.nino_id === nino.id);
@@ -93,6 +99,38 @@ export default function ReportesPage() {
           </div>
         )}
       </section>
+
+      {pacientes.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold text-slate-700">
+            👤 Expedientes clínicos
+          </h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {pacientes.map((p) => {
+              const totalNotas = db.notas.filter((n) => n.nino_id === p.id).length;
+              return (
+                <Link
+                  key={p.id}
+                  href={`/reportes/paciente/${p.id}`}
+                  className="card flex items-center justify-between transition hover:shadow-md"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">👤</span>
+                    <div>
+                      <p className="font-medium text-slate-800">{p.nombre}</p>
+                      <p className="text-xs text-slate-500">
+                        {totalNotas} nota{totalNotas !== 1 ? 's' : ''}
+                        {p.ocupacion ? ` · ${p.ocupacion}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-brand-600">→</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <AvisoConfidencialidad />
     </div>

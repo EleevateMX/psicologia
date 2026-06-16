@@ -158,9 +158,18 @@ export const AVISO_CONFIDENCIALIDAD =
   'compartirse sin consentimiento de madres, padres o tutores y conforme a ' +
   'la normativa de protección de datos de menores.';
 
+export const AVISO_CLINICO =
+  'Aviso de confidencialidad: este expediente contiene información personal ' +
+  'y de proceso psicológico. Su uso es exclusivo para el acompañamiento en ' +
+  'formación y debe tratarse con la misma ética y discreción que el secreto ' +
+  'profesional. No debe compartirse sin consentimiento expreso de la persona ' +
+  'y conforme a la normativa de protección de datos personales.';
+
 // ---------------------------------------------------------------------------
 // Modelos de datos (almacenados localmente en el dispositivo)
 // ---------------------------------------------------------------------------
+
+export type TipoExpediente = 'verano' | 'clinico';
 
 export interface Nino {
   id: string;
@@ -174,6 +183,15 @@ export interface Nino {
   notas: string | null;
   activo: boolean;
   created_at: string;
+  // Discriminator: 'verano' = Curso de Verano, 'clinico' = expediente clínico (adulto/general)
+  tipo?: TipoExpediente;
+  // Clinical fields (only relevant when tipo === 'clinico')
+  ocupacion?: string | null;
+  correo?: string | null;
+  telefono?: string | null;
+  motivo_consulta?: string | null;
+  antecedentes?: string | null;
+  plan_trabajo?: string | null;
 }
 
 export interface Observacion {

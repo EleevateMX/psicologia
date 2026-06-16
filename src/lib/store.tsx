@@ -32,7 +32,7 @@ import type {
   EstadoActividad,
   MedioContacto,
 } from '@/lib/dominio';
-import { animalAleatorio, GRUPOS_SUGERIDOS } from '@/lib/dominio';
+import { animalAleatorio, GRUPOS_SUGERIDOS, type TipoExpediente } from '@/lib/dominio';
 
 const CLAVE = 'bitacora-verano-v1';
 
@@ -73,6 +73,7 @@ const ahora = () => new Date().toISOString();
 type NuevoNino = Omit<Nino, 'id' | 'created_at' | 'animal' | 'activo'> & {
   animal?: string;
   activo?: boolean;
+  tipo?: TipoExpediente;
 };
 type NuevaObservacion = Omit<Observacion, 'id' | 'created_at'> & {
   crearAlerta?: boolean;
@@ -169,6 +170,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       tutor_contacto: n.tutor_contacto ?? null,
       alergias: n.alergias ?? null,
       notas: n.notas ?? null,
+      tipo: n.tipo,
+      ocupacion: n.ocupacion ?? null,
+      correo: n.correo ?? null,
+      telefono: n.telefono ?? null,
+      motivo_consulta: n.motivo_consulta ?? null,
+      antecedentes: n.antecedentes ?? null,
+      plan_trabajo: n.plan_trabajo ?? null,
     };
     setDb((d) => ({ ...d, ninos: [...d.ninos, nuevo] }));
     return nuevo;

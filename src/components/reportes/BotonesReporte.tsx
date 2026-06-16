@@ -4,7 +4,9 @@ import { useState } from 'react';
 import {
   generarReporteIndividual,
   generarReporteGeneral,
+  generarReportePaciente,
   type DatosReporteIndividual,
+  type DatosReportePaciente,
   type FilaGeneral,
 } from '@/lib/pdf';
 
@@ -33,6 +35,33 @@ export function BotonReporteIndividual({
       }}
     >
       {generando ? 'Generando PDF…' : (children ?? '📄 Descargar PDF')}
+    </button>
+  );
+}
+
+export function BotonReportePaciente({
+  datos,
+  className = 'btn-primary',
+}: {
+  datos: DatosReportePaciente;
+  className?: string;
+}) {
+  const [generando, setGenerando] = useState(false);
+  return (
+    <button
+      type="button"
+      className={className}
+      disabled={generando}
+      onClick={async () => {
+        setGenerando(true);
+        try {
+          await generarReportePaciente(datos);
+        } finally {
+          setGenerando(false);
+        }
+      }}
+    >
+      {generando ? 'Generando PDF…' : '📄 Descargar PDF clínico'}
     </button>
   );
 }
